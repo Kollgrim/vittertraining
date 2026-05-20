@@ -195,7 +195,7 @@ export function startWorkout(programId) {
             });
             
             // Lägg till vila efter varje set
-            currentWorkoutTimeline.push({ task: "Vila", duration: 2 });
+            currentWorkoutTimeline.push({ task: "Vila", duration: 40 });
         }
     });
     
@@ -462,7 +462,7 @@ export function selectPass(programId) {
                 </div>
                 <div class="exercise-right">
                     <span class="set-badge" style="background-color: #8a2be2; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold;">
-                    ${data.sets || 3} set × ${data.seconds || 10}s
+                    ${data.sets || 3} set × ${data.seconds || 60}s
                     </span>
                 </div>
             `;
