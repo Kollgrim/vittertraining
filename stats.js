@@ -68,15 +68,21 @@ export function updateStreak() {
     data.streak = calculatedStreak;
 }
 
-// === BEHÅLL HELT ORÖRD: Din nya sammanfattningsfunktion ===
+// === UPPDATERAD SAMMANFATTNINGSFUNKTION: Inkluderar löpningslängd för månad, år och totalt ===
 export function generateStatsSummary() {
     const historyEntries = Object.values(data.history || {});
     
+    const now = new Date();
+    const currentMonth = now.getMonth(); // 0-11
+    const currentYear = now.getFullYear();
+
     const summary = {
         totaltAntalPass: historyEntries.length,
         antalStyrka: 0,
         antalLöpning: 0,
         totalDistansKm: 0,
+        distansDennaManadKm: 0,
+        distansDettaArKm: 0,
         genomsnittligtBetyg: "",
         morgonPass: 0, // Innan kl 08:00
         nattPass: 0,   // Efter kl 21:00
@@ -87,9 +93,23 @@ export function generateStatsSummary() {
     let passMedBetyg = 0;
 
     historyEntries.forEach(entry => {
-        if (entry.type === 'löpning' || entry.isRun) {
+        const isRun = entry.type === 'löpning' || entry.isRun;
+        
+        if (isRun) {
             summary.antalLöpning++;
-            summary.totalDistansKm += parseFloat(entry.distance) || 0;
+            const distance = parseFloat(entry.distance) || 0;
+            summary.totalDistansKm += distance;
+
+            // Kontrollera tidsperioder för löpsträckor baserat på passets datum
+            if (entry.date) {
+                const entryDate = new Date(entry.date);
+                if (entryDate.getFullYear() === currentYear) {
+                    summary.distansDettaArKm += distance;
+                    if (entryDate.getMonth() === currentMonth) {
+                        summary.distansDennaManadKm += distance;
+                    }
+                }
+            }
         } else if (entry.type === 'styrka' || entry.isStrength) {
             summary.antalStyrka++;
         }
@@ -145,7 +165,7 @@ export function renderStatistics() {
     // 1. ANVÄND DIN NYA FUNKTION HÄR: Rita ut sammanfattningen i dina HTML-element!
     const statsSummary = generateStatsSummary();
     
-    // Om du har element i index.html för den övergripande datan, fylls de i här:
+    // Befintliga element i index.html fylls i här:
     const totaltPassEl = document.getElementById('total-workouts-count');
     if (totaltPassEl) totaltPassEl.textContent = statsSummary.totaltAntalPass;
 
@@ -154,6 +174,16 @@ export function renderStatistics() {
 
     const totaltLopningEl = document.getElementById('run-workouts-count');
     if (totaltLopningEl) totaltLopningEl.textContent = statsSummary.antalLöpning;
+
+    // 🚀 NYTT: Skriv ut distansstatistik (avrundat till 1 decimal för snyggare design)
+    const runMonthEl = document.getElementById('run-distance-month');
+    if (runMonthEl) runMonthEl.textContent = statsSummary.distansDennaManadKm.toFixed(1) + " km";
+
+    const runYearEl = document.getElementById('run-distance-year');
+    if (runYearEl) runYearEl.textContent = statsSummary.distansDettaArKm.toFixed(1) + " km";
+
+    const runTotalEl = document.getElementById('run-distance-total');
+    if (runTotalEl) runTotalEl.textContent = statsSummary.totalDistansKm.toFixed(1) + " km";
 
 
     // 2. RENDERA UT "DINA FRAMSTEG" (Övningslistan med unika pass och ackumulerad tid)
@@ -220,36 +250,46 @@ export function renderStatistics() {
         }
     });
 
-    // Rita ut övningslistan i containern
+   // Rita ut övningslistan i containern (MINIMALISTISK TABELL-LISTA)
     const statsContainer = document.getElementById('exercise-stats-container') || document.getElementById('dina-framsteg-lista');
     if (statsContainer) {
         statsContainer.innerHTML = "";
 
-        let exerciseList = Object.keys(exerciseStats).map(name => {
+let exerciseList = Object.keys(exerciseStats).map(name => {
             return { name: name, ...exerciseStats[name] };
         });
 
         if (currentFilter === "most-trained" || currentFilter === "Mest tränat") {
-            exerciseList = exerciseList.filter(ex => ex.count > 0).sort((a, b) => b.count - a.count);
+            // Sorterar fram och begränsar till de 5 mest utförda träningsmomenten
+            exerciseList = exerciseList
+                .filter(ex => ex.count > 0)
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5);
         } else {
             exerciseList.sort((a, b) => a.name.localeCompare(b.name));
         }
 
         exerciseList.forEach(ex => {
             const totalMinutes = Math.floor(ex.totalSeconds / 60);
-            let timeString = totalMinutes >= 60 ? `${Math.floor(totalMinutes / 60)} tim ${totalMinutes % 60} min` : `${totalMinutes} min`;
+            let timeString = totalMinutes >= 60 ? `${Math.floor(totalMinutes / 60)}t ${totalMinutes % 60}m` : `${totalMinutes}m`;
 
-            const countColor = ex.count > 0 ? "#00e5ff" : "rgba(255, 255, 255, 0.2)";
-            const timeColor = ex.count > 0 ? "#ff00d4" : "rgba(255, 255, 255, 0.2)";
-            const textColor = ex.count > 0 ? "#fff" : "rgba(255, 255, 255, 0.4)";
+            // Dimma ner övningar som inte utförts än för bättre visuell hierarki (gäller vid standardlistan)
+            const opacity = ex.count > 0 ? "1" : "0.35";
+            const countColor = ex.count > 0 ? "#00e5ff" : "inherit";
+            const timeColor = ex.count > 0 ? "#ff00d4" : "inherit";
 
             const item = document.createElement('div');
-            item.style.cssText = "background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 12px 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;";
+            // Använder display: block / table-layout koncept för stabilitet på mobila webbläsare
+            item.style.cssText = `display: flex; justify-content: space-between; align-items: center; padding: 10px 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.9em; opacity: ${opacity};`;
+            
             item.innerHTML = `
-                <div><strong style="color: ${textColor}; font-size: 1.05em;">${ex.name}</strong></div>
-                <div style="text-align: right; font-size: 0.9em; color: #8fa0dd;">
-                    <span style="display: block;">Utförd: <span style="color: ${countColor}; font-weight: bold;">${ex.count}</span> gånger</span>
-                    <span style="display: block;">Total tid: <span style="color: ${timeColor}; font-weight: bold;">${timeString}</span></span>
+                <div style="font-weight: 500; color: #fff; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    ${ex.name}
+                </div>
+                <div style="text-align: right; color: #8fa0dd; font-variant-numeric: tabular-nums; white-space: nowrap;">
+                    <span style="color: ${countColor}; font-weight: 600;">${ex.count}</span> ggr
+                    <span style="margin: 0 6px; color: rgba(255,255,255,0.15);">|</span>
+                    <span style="color: ${timeColor}; font-weight: 600;">${timeString}</span>
                 </div>
             `;
             statsContainer.appendChild(item);

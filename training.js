@@ -144,8 +144,34 @@ export function startWorkout(programId) {
         return; // Avbryt direkt så att raderna under inte kraschar appen
     }
 
-    // Använd de 3 slumpade övningarna som sparades i selectPass, eller fall tillbaka på hela listan
-    const exercisesToUse = selectedProgram.activeExecutionList || selectedProgram.list || [];
+    // 🎲 NY LOGIK FÖR PASS 4 (SLUMPAD MIX)
+    let exercisesToUse = [];
+    
+    if (cleanProgramId === 4) {
+        let allExercises = [];
+        
+        // 1. Samla ihop alla övningar från pass 1, 2 och 3
+        [1, 2, 3].forEach(id => {
+            if (activePrograms[id] && Array.isArray(activePrograms[id].list)) {
+                allExercises = allExercises.concat(activePrograms[id].list);
+            }
+        });
+
+        // 2. Skapa en djupkopia så att vi inte rör originaldatan i databasen
+        let shuffledList = JSON.parse(JSON.stringify(allExercises));
+
+        // 3. Fisher-Yates Shuffle (Blandar om listan helt slumpmässigt)
+        for (let i = shuffledList.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledList[i], shuffledList[j]] = [shuffledList[j], shuffledList[i]];
+        }
+
+        // 4. Välj hur många slumpade träningsmoment Pass 4 ska ge (t.ex. 6 stycken)
+        exercisesToUse = shuffledList.slice(0, 3);
+    } else {
+        // Standard för Pass 1, 2 och 3: Använd sparad utförandelista eller programmets baslista
+        exercisesToUse = selectedProgram.activeExecutionList || selectedProgram.list || [];
+    }
 
     // 4. BYGG SESSIONSÖVNINGAR OCH TIMELINE UTIFRÅN DET VALDA PROGRAMMET
     window.currentSessionExercises = JSON.parse(JSON.stringify(exercisesToUse));
@@ -183,7 +209,6 @@ export function startWorkout(programId) {
     
     const runSelector = document.getElementById('run-selector');
     if (runSelector) runSelector.style.display = 'none';
-
 
     // 🔥 Tvinga fram tidsdisplayen så att nedräkningen syns direkt på skärmen!
     const timerDisplay = document.getElementById('timer-display');
