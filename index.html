@@ -1,0 +1,1228 @@
+
+
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+
+
+
+<div class="header-top" style="display: flex !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; gap: 15px !important; padding-bottom: 15px;">
+    
+    <div class="user-welcome" style="flex: 1 !important; text-align: left !important;">
+        <h1 style="margin: 0; font-size: 1.4rem;">Välkommen till din träningscoach - Beatrice! <span class="wave">👋</span></h1>
+        <div id="last-workout-status" class="header-status-text" style="margin-top: 5px;">
+            Laddar status...
+        </div>
+    </div>
+    
+    <div style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 10px !important; flex-shrink: 0 !important; min-width: max-content !important;">
+        
+        <div id="health-container" 
+             onclick="import('./ui.js').then(mod => mod.showHealthInfo())" 
+             onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 0 12px rgba(255, 0, 212, 0.4)'; this.style.borderColor='rgba(255, 0, 212, 0.4)';" 
+             onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'; this.style.borderColor='#2e3d56';"
+             style="background: #1e293b; padding: 6px 14px; border-radius: 20px; border: 1px solid #2e3d56; display: flex; align-items: center; gap: 8px; min-width: 130px; height: 34px; box-sizing: border-box; cursor: pointer; transition: transform 0.2s ease, box-shadow: 0 0 12px rgba(255, 0, 212, 0), border-color 0.2s ease;">
+            
+            <span id="health-heart" style="font-size: 0.95rem; line-height: 1;">🔥</span>
+            
+            <div style="width: 60px; height: 10px; background: #0f172a; border-radius: 5px; overflow: hidden; position: relative; display: inline-block;">
+                <div id="health-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ff00d4, #9d00ff); transition: width 0.5s ease-in-out;"></div>
+            </div>
+            
+            <span id="health-text" style="color: #8fa0dd; font-size: 0.8rem; font-weight: bold; min-width: 32px; text-align: right;">100%</span>
+        </div>
+
+        <div id="streak-chip-button" class="streak-chip" onclick="toggleStreakInfoModal()" 
+             style="cursor: pointer; display: flex !important; flex-direction: row !important; align-items: center !important; gap: 5px; white-space: nowrap !important; transition: transform 0.2s ease, box-shadow: 0 0 12px rgba(255, 165, 0, 0);">
+            <span id="streak-emoji" class="streak-fire">❔</span>
+            <span class="streak-count" style="white-space: nowrap !important;"><span id="streak-number">0</span> veckor</span>
+        </div>
+        
+        <button onclick="toggleSettingsModal()" 
+                style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; font-size: 20px; padding: 0; border-radius: 50%; cursor: pointer; display: flex !important; align-items: center !important; justify-content: center !important; width: 40px; height: 40px; flex-shrink: 0 !important; transition: transform 0.2s ease, box-shadow: 0 0 12px rgba(255, 165, 0, 0), border-color 0.2s ease, background 0.2s ease;" 
+                onmouseover="this.style.transform='scale(1.05)'; this.style.background='rgba(255, 165, 0, 0.1)'; this.style.borderColor='rgba(255, 165, 0, 0.5)'; this.style.boxShadow='0 0 12px rgba(255, 165, 0, 0.5)';" 
+                onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.transform='scale(1)'; this.style.boxShadow='0 0 12px rgba(255, 165, 0, 0)';">
+            ⚙️
+        </button>
+    </div>
+</div>
+
+    <title>Träningscoach - Beatrice</title>
+    <style>
+        /* === ÖVERGRIPANDE DESIGN (CSS) === */
+        :root {
+            --bg-dark: #0b0e14;
+            --card-bg: #151921;
+            --neon-blue: #00e5ff;
+            --neon-pink: #ff00d4;
+            --neon-green: #2ecc71;
+            --white:#ffffffe6;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background: var(--bg-dark); 
+            color: #ffffff;
+            padding: 10px; 
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        /* --- LÄGG TILL DETTA I DIN CSS I INDEX.HTML --- */
+
+.exercise-stats-badge {
+    background: rgba(0, 0, 0, 0.4);       /* Mörk stilren bakgrund */
+    border: 1px solid var(--neon-pink);   /* Neonrosa kantlinje som matchar din streak */
+    color: #ffffff;
+    padding: 6px 12px;
+    border-radius: 10px;                  /* Matchar knapparnas kurvor */
+    font-size: 0.8em;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 8px rgba(255, 0, 212, 0.15); /* Svagt neon-glow */
+    white-space: nowrap;                  /* Förhindrar fula radbrytningar */
+}
+/* --- UPPDATERAD CSS FÖR DIN LEGEND I INDEX.HTML --- */
+
+.calendar-legend {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Två kolumner för bra balans */
+    gap: 12px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border);
+}
+.tab-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 20px;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* --- Ny App-Header Design --- */
+.app-header {
+    background: linear-gradient(135deg, rgba(21, 25, 33, 0.8), rgba(11, 14, 20, 0.9));
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 10px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-welcome h1 {
+    margin: 0;
+    font-size: 1.6em;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(90deg, #ffffff, #b0bec5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.header-status-text {
+    font-size: 0.85em;
+    margin-top: 4px;
+    color: #8892b0;
+    font-weight: 500;
+}
+
+/* Dynamiska färger för texten direkt i headern */
+.header-status-text.fresh {
+    color: var(--neon-blue);
+}
+.header-status-text.warning {
+    color: var(--neon-pink);
+}
+
+.header-badges {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+/* Streak Chip */
+.streak-chip {
+    background: rgba(255, 0, 212, 0.1);
+    border: 1px solid rgba(255, 0, 212, 0.3);
+    padding: 6px 14px;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 0 10px rgba(255, 0, 212, 0.1);
+}
+
+.streak-fire {
+    font-size: 1.1em;
+    animation: pulseGlow 2s infinite alternate;
+}
+
+.streak-count {
+    font-size: 0.85em;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* Hälso-knapp */
+.health-info-btn {
+    background: transparent;
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    color: var(--neon-blue);
+    padding: 5px 12px;
+    border-radius: 50px;
+    font-size: 0.75em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.health-info-btn:hover {
+    background: rgba(0, 229, 255, 0.1);
+    box-sizing: border-box;
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+}
+
+@keyframes pulseGlow {
+    from { transform: scale(1); filter: drop-shadow(0 0 2px rgba(255,0,214,0.4)); }
+    to { transform: scale(1.08); filter: drop-shadow(0 0 6px rgba(255,0,214,0.8)); }
+}
+.last-workout-badge {
+    display: inline-block;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 8px 16px;
+    border-radius: 14px;
+    font-size: 0.9em;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.last-workout-badge.fresh {
+    border-color: var(--neon-blue);
+    color: var(--neon-blue);
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.15);
+}
+
+.last-workout-badge.warning {
+    border-color: var(--neon-pink);
+    color: var(--neon-pink);
+    box-shadow: 0 0 10px rgba(255, 0, 212, 0.15);
+}
+.legend-box {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+}
+/* Blå/Blå nyanser för vanliga pass (Styrka) */
+.legend-box.strength-pass-Lätt { 
+    background: rgba(0, 229, 255, 0.3) !important; border: 1px solid var(--neon-blue) !important; 
+    color: var(--neon-blue) !important; 
+    border: var(--border); 
+}
+/* Grön/Blå nyanser för vanliga pass (Styrka) */
+.legend-box.strength-pass-Bra { 
+    background: rgba(46, 204, 113, 0.3) !important;
+    border: 1px solid var(--neon-green) !important; color: var(--neon-green) !important; 
+    border: var(--border); 
+}
+/* Röd/Blå nyanser för vanliga pass (Styrka) */
+.legend-box.strength-pass-Svårt { 
+    background:rgba(255, 0, 212, 0.3) !important; 
+    border: 1px solid var(--neon-pink) !important; 
+    color: var(--neon-pink) !important; 
+    border: var(--border); 
+}
+
+/* Blå/Blå nyanser för vanliga pass (Styrka) */
+.legend-box.strength-pass1 { 
+    background-image: linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent) !important;
+    background-size: 6px 6px !important;
+    border: var(--border); 
+}
+/* Grön/Blå nyanser för vanliga pass (Styrka) */
+.legend-box.strength-pass2 { 
+    background-image: linear-gradient(-45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent) !important;
+    background-size: 6px 6px !important;
+    border: var(--border); 
+}
+/* Röd/Blå nyanser för vanliga pass (Styrka) */
+.legend-box.strength-pass3 { 
+    background-image: linear-gradient(0deg, rgba(255,255,255,0.15) 25%, transparent 50%) !important;
+    background-size: 6px 6px !important;
+    border: var(--border); 
+}
+/* Röd/Blå nyanser för vanliga pass (Styrka) */
+.legend-box.strength-löpning { 
+    background-image: linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 75%,  rgba(255,255,255,0.15) 75%,  rgba(255,255,255,0.15)), 
+                              linear-gradient(45deg,  rgba(255,255,255,0.15) 25%, transparent 25%, transparent 75%,  rgba(255,255,255,0.15) 75%,  rgba(255,255,255,0.15)) !important;
+            background-size: 8px 8px !important;
+            background-position: 0 0, 4px 4px !important;
+    border: var(--border); 
+}
+
+
+
+/* Rödaktig nyans för dina Löpningspass */
+.legend-box.run-pass { 
+    background: #e74c3c; 
+    border: 1px solid rgba(231, 76, 60, 0.4);
+}
+
+/* Guldstjärna + färg för Personbästa (PB) */
+.legend-box.pb-pass {
+    background:  rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: #000;
+    font-weight: bold;
+}
+
+/* Vilodag med ditt sneda hatchmönster */
+.legend-box.rest-day-hatch {
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.05),
+        rgba(255, 255, 255, 0.05) 4px,
+        rgba(255, 255, 255, 0.15) 4px,
+        rgba(255, 255, 255, 0.15) 8px
+    );
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
+/* Tvingar rutorna i legenden att hålla samma fasta storlek */
+.legend-item .day-box {
+    width: 24px !important;
+    height: 24px !important;
+    margin: 0 !important;
+    cursor: default !important;
+}
+
+/* Vi säkerställer också att hela raden har rätt centrering vertikalt */
+.exercise-item { 
+    display: flex; 
+    align-items: center; /* Centrerar bild, text och siffror perfekt */
+    gap: 15px;
+    padding: 12px; 
+    background: var(--glass); 
+    border-radius: 18px; 
+    margin-bottom: 10px; 
+    transition: 0.3s;
+    border: 1px solid transparent;
+}
+
+        .card { 
+            background: var(--card-bg); 
+            padding: 20px; 
+            border-radius: 24px; 
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+        }
+
+        h2 { 
+            font-size: 1.1em; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            margin: 0 0 15px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--neon-blue);
+        }
+
+        /* --- FLIKMENY --- */
+        .tab-menu {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: var(--glass);
+            border: 1px solid var(--border);
+            color: #888;
+            border-radius: 14px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            transition: 0.3s;
+        }
+        .tab-btn.active {
+            border-color: var(--neon-blue);
+            color: var(--neon-blue);
+            background: rgba(0, 229, 255, 0.1);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+        }
+
+        /* --- STATISTIK DESIGN --- */
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: var(--glass);
+            border-radius: 14px;
+            margin-bottom: 8px;
+            border: 1px solid transparent;
+        }
+        .stat-item:hover {
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+        .trend-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        .trend-good { color: var(--neon-green); font-weight: bold; }
+        .trend-bad { color: var(--neon-pink); font-weight: bold; }
+
+        /* --- ÖVNINGSLISTA --- */
+        .exercise-item { 
+            display: flex; 
+            align-items: center;
+            gap: 15px;
+            padding: 12px; 
+            background: var(--glass); 
+            border-radius: 18px; 
+            margin-bottom: 10px; 
+            transition: 0.3s;
+        }
+
+        .active-ex { 
+            border-color: var(--neon-green); 
+            background: rgba(46, 204, 113, 0.1) !important;
+        }
+
+        /* --- TIMER --- */
+        #timer-display { 
+            width: 220px; 
+            height: 220px;
+            border-radius: 50%;
+            border: 6px solid var(--neon-blue);
+            margin: auto; 
+            display: none;
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center;
+            position: relative;
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.2);
+        }
+
+        #timer-time { font-size: 5.5em; font-weight: 900; color: var(--neon-blue); margin: 0; line-height: 1; }
+        #timer-task { font-size: 0.75em; text-transform: uppercase; opacity: 0.6; }
+        #timer-set { font-size: 0.85em; color: var(--neon-pink); font-weight: bold; }
+
+        /* --- KNAPPAR --- */
+        .btn-main { 
+            background: linear-gradient(90deg, var(--neon-pink), #8e44ad); 
+            color: white; border: none; padding: 15px; border-radius: 12px; 
+            width: 100%; font-weight: bold; cursor: pointer;
+        }
+
+        /* --- KALENDER-GRID --- */
+        .calendar-grid { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); 
+            gap: 4px; 
+            margin-top: 10px; 
+        }
+
+        .day-box { 
+            aspect-ratio: 1; 
+            border-radius: 4px; 
+            background: #1c222d; 
+            font-size: 0.7em; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            color: #444;
+        }
+
+        /* --- GEMENSAM STIL FÖR ALLA TRÄNADE DAGAR --- */
+        .day-box.Pass1, .day-box.Pass2, .day-box.Pass3, .day-box.Löpning {
+            color: white !important;
+            font-weight: bold;
+        }
+
+        /* Pass 1: Glesa ränder */
+        .day-box.Pass1 {
+            background-image: linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent) !important;
+            background-size: 10px 10px !important;
+        }
+
+        /* Pass 2: Täta ränder */
+        .day-box.Pass2 {
+            background-image: linear-gradient(-45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent) !important;
+            background-size: 6px 6px !important;
+        }
+
+        /* Pass 3: Horisontella ränder */
+        .day-box.Pass3 {
+            background-image: linear-gradient(0deg, rgba(255,255,255,0.15) 50%, transparent 50%) !important;
+            background-size: 100% 6px !important;
+        }
+
+        /* Löpning: Orange mönster */
+        .day-box.Löpning {
+            background-color: #e67e22 !important;
+            background-image: linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.15) 75%, rgba(0,0,0,0.15)), 
+                              linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.15) 75%, rgba(0,0,0,0.15)) !important;
+            background-size: 8px 8px !important;
+            background-position: 0 0, 4px 4px !important;
+            border: 1px solid #d35400 !important;
+        }
+
+        /* Svårighetsgrader */
+        .day-box.Lätt { background-color: rgba(0, 229, 255, 0.3) !important; border: 1px solid var(--neon-blue) !important; color: var(--neon-blue) !important; }
+        .day-box.Bra { background-color: rgba(46, 204, 113, 0.3) !important; border: 1px solid var(--neon-green) !important; color: var(--neon-green) !important; }
+        .day-box.Svårt { background-color: rgba(255, 0, 212, 0.3) !important; border: 1px solid var(--neon-pink) !important; color: var(--neon-pink) !important; }
+
+        /* MODAL & ÖVRIGT */
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 20px; width: 90%; max-width: 400px; color: #333; }
+        .pb-display { display: block; font-size: 0.9em; margin-top: 8px; color: #ffffff; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+    
+    /* Lägg till i din CSS i index.html */
+#pass-selector button.active-pass {
+    border-color: var(--neon-blue) !important;
+    color: var(--neon-blue) !important;
+    background: rgba(0, 229, 255, 0.1) !important;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+}
+
+.neon-btn-pause {
+    background: var(--card-bg);
+    color: white;
+    border: 2px solid var(--neon-blue);
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+    width: 100%;
+    margin-top: 10px;
+    text-transform: uppercase;
+}
+
+.neon-btn-pause:hover {
+    background: var(--neon-blue);
+    color: var(--bg-dark);
+    box-shadow: 0 0 25px rgba(0, 229, 255, 0.6);
+}
+
+/* Stiländring när knappen är i "Återuppta"-läge */
+.neon-btn-pause.resume-mode {
+    border-color: var(--neon-pink);
+    box-shadow: 0 0 15px rgba(255, 0, 212, 0.2);
+}
+
+.neon-btn-pause.resume-mode:hover {
+    background: var(--neon-pink);
+    color: white;
+    box-shadow: 0 0 25px rgba(255, 0, 212, 0.6);
+}
+
+/* --- LÄGG TILL DETTA I DIN CSS I INDEX.HTML --- */
+
+/* Fryser animationen på alla bilder i övningslistan */
+
+.exercise-image-static {
+    width: 85px;          /* Ändra storleken här om du vill ha mindre/större */
+    height: 85px;
+    border-radius: 14px;  /* Rundade hörn */
+    object-fit: cover;    /* Förhindrar att bilden trycks ihop */
+    border: 2px solid rgba(0, 229, 255, 0.2); /* Snygg dämpad neonram */
+}
+/* Säkerställ att övningsraderna har tillräckligt med utrymme för de större bilderna */
+.exercise-item { 
+    display: flex; 
+    align-items: center; 
+    gap: 15px; 
+    padding: 15px; 
+    background: var(--glass); 
+    border-radius: 18px; 
+    margin-bottom: 10px; 
+    transition: 0.3s;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+
+
+/* Styling för Startskärmen */
+#splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--bg-dark, #0b0e14); /* Använder Beatrices mörka bakgrund */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999; /* Ligger ovanpå precis allt annat */
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.splash-content {
+    text-align: center;
+    color: #fff;
+}
+
+.splash-logo {
+    font-size: 4rem;
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+#splash-screen h1 {
+    font-size: 2.5rem;
+    letter-spacing: 4px;
+    margin: 10px 0 5px 0;
+    background: linear-gradient(45deg, var(--neon-blue, #00e5ff), var(--neon-pink, #ff00d4));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+#splash-screen p {
+    color: #8fa0dd;
+    font-size: 1rem;
+    margin-bottom: 30px;
+}
+
+/* Laddningssnurra */
+.splash-loader {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top: 4px solid var(--neon-pink, #ff00d4);
+    border-radius: 50%;
+    margin: 0 auto;
+    animation: spin 1s linear infinite;
+}
+
+/* Animationer */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+/* Klass för att tona ut skärmen snyggt */
+#splash-screen.fade-out {
+    opacity: 0;
+    visibility: hidden;
+}
+
+    
+    </style>
+</head>
+<body>
+
+    <!--  MENYER  -->
+
+    <div id="view-workout">
+        
+            <div id="timer-display" style="display: none;">
+                <div id="timer-task">"Gör dig redo!"</div>
+                <div id="timer-time">10</div>
+                <div id="timer-set">"Passet startar strax..."</div>
+            </div>
+    </div>        
+
+
+<div id="countdownDisplay" style="display: none; font-size: 2em; color: var(--neon-pink); font-weight: bold; text-align: center; margin: 10px 0;">
+    Återupptar om: 10s
+</div>  
+
+<div id="splash-screen">
+    <div class="splash-content">
+        <div class="splash-logo">🏃‍♀️</div>
+        <h1>BEATRICE</h1>
+        <p>Din personliga träningscoach</p>
+        <div class="splash-loader"></div>
+    </div>
+</div>
+
+
+<!-- FLIK - TRÄNING -->
+
+
+<div id="workout-section" class="tab-content" style="display: none; flex-direction: column;">
+    <div style="display: flex; justify-content: center; width: 100%; margin: 0px 0 15px 0;">
+        <button id="start-btn" onclick="startWorkout()" 
+            onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 0 25px rgba(255, 0, 214, 0.6)'; this.style.borderColor='#ff00d4';" 
+            onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 0 15px rgba(255, 0, 214, 0.2)'; this.style.borderColor='rgba(255, 0, 214, 0.4)';"
+            style="
+                display: none; 
+                background: linear-gradient(135deg, #ff00d4 0%, #9d00ff 100%);
+                color: #ffffff;
+                border: 1px solid rgba(255, 0, 214, 0.4);
+                border-radius: 30px;
+                padding: 14px 36px;
+                font-size: 1rem;
+                font-weight: 800;
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
+                cursor: pointer;
+                align-items: center;
+                gap: 10px;
+                box-shadow: 0 0 15px rgba(255, 0, 214, 0.2);
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                outline: none;
+            ">
+            <span style="font-size: 0.9rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">▶</span>
+            <span style="text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">Starta passet</span>
+        </button>
+    </div>
+
+<div 
+id="workout-controls" style="display: none; justify-content: center; gap: 0px; margin-top: 20px;">
+    <button id="pause-btn" onclick="pauseWorkout()" 
+            style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; font-size: 1.1rem; padding: 12px 25px; border-radius: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s ease;"
+            onmouseover="this.style.background='rgba(255, 165, 0, 0.1)'; this.style.borderColor='rgba(255, 165, 0, 0.5)'; this.style.boxShadow='0 0 12px rgba(255, 165, 0, 0.3)';"
+            onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.boxShadow='none';">
+        ⏸️ Pausa passet
+    </button>
+
+    <button id="resume-btn" onclick="resumeWorkout()" 
+            style="display: none; background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; color: #fff; font-size: 1.1rem; padding: 12px 25px; border-radius: 30px; cursor: pointer; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); transition: transform 0.2s ease;"
+            onmouseover="this.style.transform='scale(1.05)';"
+            onmouseout="this.style.transform='scale(1)';">
+        ▶️ Återuppta
+    </button>
+</div>
+
+    <h2 id="workout-title" style="margin-top: 0; margin-bottom: 25px; justify-content: center; width: 100%;text-align: center;">Välj ett träningspass</h2>
+    
+    <div class="workout-cards-grid" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; width: 100%; box-sizing: border-box;">
+        
+        <div class="workout-card card" onclick="document.getElementById('workout-title').style.display='none'; import('./training.js').then(mod => mod.selectPass(1))" style="cursor: pointer; padding: 20px; transition: transform 0.2s; flex: 1; min-width: 200px; width: calc(33.333% - 10px); box-sizing: border-box;">
+            <h3 style="margin: 0 0 8px 0; color: #ff00d4;">💪 PASS 1</h3>
+            <h4 style="margin: 0 0 8px 0; font-size: 0.95rem; color: #fff;">Armar & Överkropp</h4>
+            <p style="margin: 0; font-size: 0.85rem; color: #8fa0dd;">Fokus på biceps, triceps, axlar och bröst. 5 effektiva övningar.</p>
+        </div>
+        
+        <div class="workout-card card" onclick="document.getElementById('workout-title').style.display='none'; import('./training.js').then(mod => mod.selectPass(2))" style="cursor: pointer; padding: 20px; transition: transform 0.2s; flex: 1; min-width: 200px; width: calc(33.333% - 10px); box-sizing: border-box;">
+            <h3 style="margin: 0 0 8px 0; color: #ff00d4;">🦵 PASS 2</h3>
+            <h4 style="margin: 0 0 8px 0; font-size: 0.95rem; color: #fff;">Ben & Rumpa</h4>
+            <p style="margin: 0; font-size: 0.85rem; color: #8fa0dd;">Stärk underkroppen och bålen. Knäböj, utfall och core-fokus.</p>
+        </div>
+        
+        <div class="workout-card card" onclick="document.getElementById('workout-title').style.display='none'; import('./training.js').then(mod => mod.selectPass(3))" style="cursor: pointer; padding: 20px; transition: transform 0.2s; flex: 1; min-width: 200px; width: calc(33.333% - 10px); box-sizing: border-box;">
+            <h3 style="margin: 0 0 8px 0; color: #ff00d4;">🔥 PASS 3</h3>
+            <h4 style="margin: 0 0 8px 0; font-size: 0.95rem; color: #fff;">MAGE & CORE</h4>
+            <p style="margin: 0; font-size: 0.85rem; color: #8fa0dd;">Högintensivt pass som utmanar både styrka och flås för hela kroppen.</p>
+        </div>
+    </div>
+
+    <div class="run-cards-grid" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 15px; margin-bottom: 25px; width: 100%; box-sizing: border-box;">
+        <div class="workout-card card" onclick="import('./training.js').then(mod => mod.startRun(5))" style="cursor: pointer; padding: 20px; transition: transform 0.2s; flex: 1; min-width: 250px; width: calc(50% - 8px); box-sizing: border-box; background: linear-gradient(135deg, rgba(26, 31, 56, 0.8) 0%, rgba(0, 242, 254, 0.05) 100%); border-color: rgba(0, 242, 254, 0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                <div>
+                    <h3 style="margin: 0 0 8px 0; color: #00f2fe;">🏃 Löpning 5 km</h3>
+                    <p style="margin: 0; font-size: 0.85rem; color: #8fa0dd;">Konditionstest och distans. Beatrice håller koll på tempot.</p>
+                </div>
+                <div id="pb-5" style="font-size: 0.8rem; font-weight: bold; color: #00f2fe; background: rgba(0, 242, 254, 0.1); padding: 6px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0;">
+                    PB: --:--
+                </div>
+            </div>
+        </div>
+
+        <div class="workout-card card" onclick="import('./training.js').then(mod => mod.startRun(10))" style="cursor: pointer; padding: 20px; transition: transform 0.2s; flex: 1; min-width: 250px; width: calc(50% - 8px); box-sizing: border-box; background: linear-gradient(135deg, rgba(26, 31, 56, 0.8) 0%, rgba(0, 242, 254, 0.05) 100%); border-color: rgba(0, 242, 254, 0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                <div>
+                    <h3 style="margin: 0 0 8px 0; color: #00f2fe;">🏃 Löpning 10 km</h3>
+                    <p style="margin: 0; font-size: 0.85rem; color: #8fa0dd;">Långdistansutmaning. Sätt ett nytt uthållighetsrekord!</p>
+                </div>
+                <div id="pb-10" style="font-size: 0.8rem; font-weight: bold; color: #00f2fe; background: rgba(0, 242, 254, 0.1); padding: 6px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0;">
+                    PB: --:--
+                </div>
+            </div>
+        </div>
+    </div>
+   
+    <div id="exercises-list" class="workout-exercises-container">
+    </div>
+</div>        
+    
+<!-- FLIK - HISTORIK -->
+
+<div id="history-section" class="tab-content" style="display: none; flex-direction: column; justify-content: flex-start; gap: 0px;">
+            <div class="card" ;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0;">KALENDER 2026</h2>
+                <div>
+                    <button onclick="changeMonth(-1)" style="background:none; border:1px solid var(--neon-blue); color:var(--neon-blue); border-radius:5px; padding:2px 8px; cursor:pointer;">&lt;</button>
+                    <button onclick="goToToday()" style="background:none; border:1px solid var(--neon-pink); color:var(--neon-pink); border-radius:5px; padding:2px 12px; font-size: 0.7em; font-weight: bold; cursor:pointer; margin: 0 5px;">IDAG</button>
+                    <button onclick="changeMonth(1)" style="background:none; border:1px solid var(--neon-blue); color:var(--neon-blue); border-radius:5px; padding:2px 8px; cursor:pointer;">&gt;</button>
+                </div>
+            </div>
+            <div id="calendar-container"></div>
+
+<div class="calendar-legend" style="background: var(--card-bg); padding: 15px; border-radius: 24px; border: 1px solid var(--border); margin-top: 15px;">
+    
+    <div class="legend-section" style="margin-bottom: 15px;">
+        <h4 style="color: var(--white); margin: 0 0 10px 0; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px;">Träningstyper</h4>
+        <div class="legend-items" style="display: flex; flex-wrap: wrap; gap: 15px;"> 
+            <div class="legend-item" style="display: flex; align-items: center; gap: 6px; font-size: 0.85em;">
+                    <div class="legend-item">
+        <div class="legend-box strength-pass1"></div>
+        <span><b>Armar & överkropp</b> </span>
+    </div>
+            </div>
+            <div class="legend-item">
+        <div class="legend-box strength-pass2"></div>
+        <span><b>Ben & säte</b></span>
+    </div>
+<div class="legend-item">
+        <div class="legend-box strength-pass3"></div>
+        <span><b>Mage & core</b></span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-box strength-löpning"></div>
+        <span><b>Löpning</b></span>
+    </div>
+            </div>
+    </div>
+
+    <div class="legend-section">
+        <h4 style="color: var(--white); margin: 0 0 10px 0; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px;">Passkänsla</h4>
+        <div class="legend-items" style="display: flex; flex-wrap: wrap; gap: 15px;">
+             <div class="legend-item">
+        <div class="legend-box strength-pass-Lätt"></div>
+        <span><b>Lätt</b></span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-box strength-pass-Bra"></div>
+        <span><b>Bra</b></span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-box strength-pass-Svårt"></div>
+        <span><b>Svårt</b></span>
+    </div>
+        </div>
+    </div>
+
+<div class="legend-section">
+        <h4 style="color: var(--white); margin: 0 0 10px 0; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px;">ÖVRIGT</h4>
+        <div class="legend-items" style="display: flex; flex-wrap: wrap; gap: 15px;">
+    <div class="legend-item">
+        <div class="legend-box pb-pass">⭐</div>
+        <span><b>Personbästa:</b> Nytt PB på löpnigen!</span>
+    </div>
+   
+    </div>
+        </div>
+    </div>
+
+
+
+</div>   
+
+</div>
+
+<!--  FLIK - PRESTATIONER  -->
+
+<div id="achievements-section" class="tab-content" style="display: none;">
+         <div id="achievements-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; padding: 10px;">
+        </div>
+</div>
+
+<!-- FLIK - STATISTIK -->
+
+<div id="stats-selection" class="tab-content" style="display: none;">
+   
+    <div style="display: flex; gap: 20px; justify-content: space-around; margin-top: 10px;">
+        <div style="text-align: center;">
+            <span style="font-size: 0.9rem; color: var(--white); display: block;">5 KM</span>
+            <strong id="pb-5km" style="font-size: 1.3rem; color: var(--neon-pink);">Laddar...</strong>
+        </div>
+        <div style="text-align: center;">
+            <span style="font-size: 0.9rem; color: var(--white); display: block;">10 KM</span>
+            <strong id="pb-10km" style="font-size: 1.3rem; color: var(--neon-pink);">Laddar...</strong>
+        </div>
+    </div>
+    <div class="stat-hero-card">
+        <span style="font-size: 0.8em; text-transform: uppercase; letter-spacing: 2px; color: #888;">Ackumulerad Aktiv Tid</span>
+        <div id="total-active-time" style="font-size: 2.8em; font-weight: 900; color: #ffffff; margin: 5px 0; text-shadow: 0 0 10px var(--neon-blue);">0s</div>
+        <span id="total-workouts-count" style="font-size: 0.85em; color: var(--neon-green); font-weight: bold;">0 pass genomförda totalt</span>
+        
+    </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            
+            <h2 style="margin:0; font-size: 1.2em;">🔥 DINA FRAMSTEG</h2>
+            <select id="stats-filter" onchange="renderStatsPage()" style="background: #1c222d; color: var(--neon-blue); border: 1px solid var(--border); padding: 6px 12px; border-radius: 10px; font-size: 0.8em; font-weight: bold; cursor: pointer;">
+                <option value="all">Visa alla övningar</option>
+                <option value="most-trained">Mest tränat</option>
+            </select>
+        </div>
+        <div id="exercise-stats-container" style="display: flex; flex-direction: column; gap: 15px;">
+            </div>
+  
+
+    <div class="card" style="margin-top: 15px;">
+            <h2>MÅNADENS LÖPTEMPO</h2>
+            <strong id="current-month-pace">Ingen data än</strong>
+                </div>
+
+            <h2 style="margin-top: 25px; border-top: 1px solid var(--border); padding-top: 15px;">MÅNADSTREND (DENNA VS FÖRRA MÅNADEN)</h2>
+    <div id="run-trends-container">
+    </div>
+    </div>
+
+
+
+    
+    </div>
+
+    <div id="run-finish-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 9999; flex-direction: column; align-items: center; justify-content: center;">
+        <div id="run-info-display" style="color: white; margin-bottom: 20px; font-size: 1.2em; letter-spacing: 2px;">🏃 LOGGAR LÖPNING...</div>
+        <button id="finish-run-btn" style="background: var(--neon-pink); color: white; border: none; padding: 25px 40px; border-radius: 20px; font-size: 1.5em; font-weight: bold; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 30px var(--neon-pink);">KLAR - STOPPA TID</button>
+    </div> 
+
+    <div id="ratingModal" class="modal">
+        <div class="modal-content" style="background:#151921; border:1px solid var(--neon-blue); text-align:center;">
+            <h3 style="color:white;">Bra jobbat!</h3>
+            <p style="color:#ccc;">Hur kändes passet?</p>
+            <button class="rating-btn easy" onclick="saveAndReset('Lätt')">Lätt 😊</button>
+            <button class="rating-btn good" onclick="saveAndReset('Bra')">Bra 👍</button>
+            <button class="rating-btn hard" onclick="saveAndReset('Svårt')">Svårt 🔥</button>
+        </div>
+    </div>
+
+    <div id="exerciseModal" class="modal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: #151921; border: 2px solid var(--neon-blue); padding: 25px; border-radius: 24px; width: 90%; max-width: 400px; color: white; text-align: center; position: relative; box-shadow: 0 0 30px rgba(0, 229, 255, 0.2);">
+            <span onclick="closeModal()" style="position: absolute; top: 15px; right: 20px; font-size: 1.5em; cursor: pointer; color: var(--neon-pink); font-weight: bold;">&times;</span>
+            <h3 id="modalTitle" style="color: var(--neon-blue); margin-top: 5px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">Övningsnamn</h3>
+            <img id="modalImg" src="" alt="Instruktion" style="width: 100%; max-width: 280px; border-radius: 16px; margin-bottom: 15px; border: 1px solid var(--border);">
+            <p id="modalDesc" style="color: #ccc; font-size: 0.95em; line-height: 1.5; margin-bottom: 20px;">Beskrivning av övningen...</p>
+            <button class="btn-main" onclick="closeModal()" style="background: linear-gradient(90deg, var(--neon-blue), #0099ff); color: white; border: none; padding: 12px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);">JAG HAR FATTAT!</button>
+        </div>
+    </div>
+</div>
+
+
+
+<style>
+    .tab-btn.active {
+        border-color: var(--neon-blue) !important;
+        color: var(--neon-blue) !important;
+        background: rgba(0, 229, 255, 0.1) !important;
+        box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+    }
+    .stat-hero-card {
+        background: linear-gradient(135deg, #1e2530, #151921);
+        border: 2px solid var(--neon-blue);
+        box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+        text-align: center;
+        padding: 25px;
+        border-radius: 24px;
+        margin-bottom: 20px;
+    }
+    .stat-progress-container {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        height: 8px;
+        width: 100%;
+        overflow: hidden;
+        margin-top: 8px;
+    }
+    .stat-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink));
+        border-radius: 10px;
+        transition: width 0.5s ease-in-out;
+    }
+    .badge {
+        font-size: 1.2em;
+        margin-right: 5px;
+    }
+</style>
+
+
+<div id="view-stats" style="display: none;">
+   
+</div>
+    
+   <!--<script src="logik.js"></script>--> 
+
+   <div id="achievementModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 14, 20, 0.85); backdrop-filter: blur(8px); z-index: 10000; justify-content: center; align-items: center;">
+    <div style="background: linear-gradient(135deg, #1e2530, #151921); border: 2px solid var(--neon-pink); box-shadow: 0 0 30px rgba(255, 0, 212, 0.4); padding: 35px 25px; border-radius: 24px; text-align: center; max-width: 420px; width: 90%; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+        
+        <h2 style="color: var(--neon-pink); font-size: 24px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px;">NYA PRESTATIONER!</h2>
+        <p style="color: #8fa0dd; font-size: 14px; margin-bottom: 25px;">Mäktigt! Du låste precis upp dessa under passet: 🥳</p>
+        
+        <div id="achievement-modal-list" style="margin-bottom: 25px; display: flex; flex-direction: column;">
+            </div>
+        
+        <button onclick="closeAchievementModal()" style="background: linear-gradient(90deg, var(--neon-pink), #ff007b); color: white; border: none; padding: 14px; border-radius: 12px; width: 100%; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 0 0 15px rgba(255, 0, 212, 0.4); transition: transform 0.2s;">
+            SNACKA OM GRYMT! 🔥
+        </button>
+    </div>
+</div>
+
+<style>
+@keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+@keyframes pulseSingleIcon {
+    0% { transform: scale(1); filter: drop-shadow(0 0 5px var(--neon-pink)); }
+    50% { transform: scale(1.15); filter: drop-shadow(0 0 15px var(--neon-pink)); }
+    100% { transform: scale(1); filter: drop-shadow(0 0 5px var(--neon-pink)); }
+}
+</style>
+<div id="instruction-modal" class="custom-modal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
+    <div class="modal-content" style="background-color: #1a1d26; border: 1px solid #2d3242; padding: 25px; border-radius: 12px; max-width: 450px; width: 90%; text-align: center; color: #fff; box-shadow: 0 8px 32px rgba(0,0,0,0.5); position: relative;">
+        
+        <h2 id="modal-exercise-title" style="margin-top: 0; color: #fff; font-size: 1.5rem; margin-bottom: 15px;">Övningsnamn</h2>
+        
+        <div style="width: 100%; max-height: 250px; overflow: hidden; border-radius: 8px; background-color: #fff; margin-bottom: 15px; display: flex; align-items: center; justify-content: center;">
+            <img id="modal-exercise-gif" src="" alt="Träningsmoment" style="max-width: 100%; max-height: 250px; object-fit: contain;">
+        </div>
+        
+        <p id="modal-exercise-desc" style="color: #b3b9c9; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">Instruktioner...</p>
+        
+        <button id="close-instruction-btn" style="background-color: #8a2be2; color: white; border: none; padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.95rem; width: 100%; transition: background 0.2s;">
+            Stäng instruktion
+        </button>
+    </div>
+</div>
+
+    <script type="module" src="app.js"></script>
+
+
+
+
+<div id="streak-info-modal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+    <div style="background-color: #151921; border: 1px solid rgba(255, 165, 0, 0.4); padding: 30px; border-radius: 16px; max-width: 400px; width: 90%; color: #fff; box-shadow: 0 0 20px rgba(255, 165, 0, 0.2); position: relative; text-align: center;">
+        
+        <div style="font-size: 50px; margin-bottom: 10px; filter: drop-shadow(0 0 10px rgba(255,165,0,0.5));">🔥</div>
+        <h2 style="margin-top: 0; color: #fff; font-size: 1.6rem; margin-bottom: 15px;">Hur fungerar Streaks?</h2>
+        
+        <div style="text-align: left; background: rgba(255, 255, 255, 0.02); padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5; color: #cbd5e1;">
+            <p style="margin-top: 0;">Din streak visar hur många <strong>veckor i rad</strong> du har hållit igång din träning med Beatrice!</p>
+            
+            <ul style="padding-left: 20px; margin-bottom: 0; color: #8fa0dd;">
+                <li style="margin-bottom: 8px;"><strong style="color: #fff;">Håll elden levande:</strong> Gör minst <span style="color: #2ecc71; font-weight: bold;">ett träningspass</span> (styrka eller löpning) varje kalendervecka (måndag–söndag).</li>
+                <li><strong style="color: #fff;">Nollställning:</strong> Om en hel vecka passerar utan att du registrerar något pass, slocknar elden och din streak går tillbaka till 0.</li>
+            </ul>
+        </div>
+
+        <button onclick="toggleStreakInfoModal()" style="background: linear-gradient(135deg, #ff9900, #ff5500); border: none; color: white; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(255,102,0,0.3); width: 100%; font-size: 1rem;">
+            Uppfattat, låt oss träna!
+        </button>
+    </div>
+</div>
+
+
+<!-- INSTÄLLNINGAR -->
+
+<div id="settings-modal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+    <div style="background-color: #151921; border: 1px solid rgba(255, 0, 212, 0.3); padding: 30px; border-radius: 16px; max-width: 400px; width: 90%; color: #fff; box-shadow: 0 0 20px rgba(255, 0, 212, 0.15); position: relative; text-align: center;">
+        
+        <h2 style="margin-top: 0; color: #fff; font-size: 1.6rem; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">⚙️ Inställningar</h2>
+        
+        <div style="text-align: left; margin-bottom: 25px;">
+            
+            <div style="margin-bottom: 20px; background: rgba(255, 255, 255, 0.02); padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                <label style="display: block; color: #8fa0dd; font-size: 0.95rem; margin-bottom: 10px; font-weight: bold;">
+                    ⏱️ Tid per träningsmoment: <span id="settings-seconds-display" style="color: var(--neon-pink); font-size: 1.1rem;">10</span> sek
+                </label>
+                <input type="range" id="settings-seconds-slider" min="10" max="100" step="5" value="10" oninput="updateSettingsSeconds(this.value)" style="width: 100%; accent-color: var(--neon-pink); cursor: pointer;">
+                <span style="display: flex; justify-content: space-between; font-size: 11px; color: #566585; margin-top: 5px;">
+                    <span>10s</span>
+                    <span>100s</span>
+                </span>
+
+            </div>
+
+
+<!-- 
+            
+// Funktion finns för att bestämma set för användare men används inte just nu //
+
+
+            <div style="margin-bottom: 25px; background: rgba(255, 255, 255, 0.02); padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                <label style="display: block; color: #8fa0dd; font-size: 0.95rem; margin-bottom: 10px; font-weight: bold;">
+                    🔄 Antal set per övning: <span id="settings-sets-display" style="color: var(--neon-blue); font-size: 1.1rem;">3</span> st
+                </label>
+                <input type="range" id="settings-sets-slider" min="1" max="10" step="1" value="3" oninput="updateSettingsSets(this.value)" style="width: 100%; accent-color: var(--neon-blue); cursor: pointer;">
+                <span style="display: flex; justify-content: space-between; font-size: 11px; color: #566585; margin-top: 5px;">
+                    <span>1 set</span>
+                    <span>10 set</span>
+                </span>
+            </div>
+ -->           
+        
+        <button onclick="import('./history.js').then(mod => {  
+            const dummy = { name: 'Fuskpass (Styrka)', type: 'Styrka', date: new Date().toISOString().split('T')[0], exercises: [{ name: 'Fusk', sets: [1] }] };  
+            import('./database.js').then(db => { db.data.history.push(dummy); db.saveDatabase(); mod.saveAndReset('Lagom'); });  
+        })" style="margin-top: 25px; margin-bottom: 15px; background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.1); color: #7784ab; padding: 10px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; width: 100%;">
+            🤫 Fuska (Lägg till pass i historiken)
+        </button>
+
+            <p style="color: #566585; font-size: 0.85rem; margin-bottom: 10px;"></p>
+            <button onclick="if(confirm('Är du säker på att du vill rensa all historik? Detta går inte att ångra.')) { clearHistory(); toggleSettingsModal(); }" style="width: 100%; background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; color: #e74c3c; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 0.9rem;" onmouseover="this.style.background='rgba(231, 76, 60, 0.2)'" onmouseout="this.style.background='rgba(231, 76, 60, 0.1)'">
+                🗑️ Nollställ all träningsdata
+            </button>
+        </div>
+
+        <button onclick="toggleSettingsModal()" style="background: linear-gradient(135deg, var(--neon-pink), #bc009b); border: none; color: white; padding: 10px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(255,0,212,0.3); width: 100%;">
+            Stäng
+        </button>
+    </div>
+
+
+    </div>
+</div>
+
+
+
+</div>
+
+<!-- KNAPPAR -->
+
+
+<!-- PAUS-KNAPP 
+ FÖR ATT PAUSA STARTAT TRÄNINGSPASS-->
+
+
+
+
+<div id="healthModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+    <div style="background: #1e293b; border: 2px solid #ff00d4; border-radius: 16px; padding: 25px; width: 90%; max-width: 450px; box-shadow: 0 0 20px rgba(255, 0, 212, 0.3); color: white; position: relative; font-family: sans-serif;">
+        
+        <h3 style="color: #ff00d4; margin-top: 0; margin-bottom: 15px; font-size: 1.4rem; display: flex; align-items: center; gap: 10px;">
+            ❤️ SÅ FUNGERAR "DIN HÄLSA"
+        </h3>
+        
+        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; font-size: 0.95rem; line-height: 1.4;">
+            <li style="display: flex; gap: 10px;"><span style="flex-shrink: 0;">🔥</span> Detta är din motivationsmätare! Du startar på 100%.</li>
+            <li style="display: flex; gap: 10px;"><span style="flex-shrink: 0;">⏳</span> Om du inte loggar något pass eller löpning på 3 dagar börjar mätaren att sjunka.</li>
+            <li style="display: flex; gap: 10px;"><span style="flex-shrink: 0;">📉</span> För varje extra vilodag dras 10% av från mätaren.</li>
+            <li style="display: flex; gap: 10px;"><span style="flex-shrink: 0;">💔</span> Om hälsan sjunker under 50% blir hjärtat brustet.</li>
+            <li style="display: flex; gap: 10px;"><span style="flex-shrink: 0;">⚡</span> Så fort du kör ett träningspass eller en löprunda återställs mätaren till 100% direkt!</li>
+        </ul>
+        
+        <button onclick="closeHealthModal()" style="margin-top: 20px; width: 100%; padding: 12px; background: linear-gradient(45deg, #ff00d4, #9d00ff); border: none; color: white; font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: transform 0.1s;">
+            Uppfattat!
+        </button>
+    </div>
+</div>
+
+
+<style>
+@keyframes pulse-blink {
+    0% { opacity: 1; filter: drop-shadow(0 0 2px rgba(255, 0, 0, 0.5)); }
+    50% { opacity: 0.4; filter: drop-shadow(0 0 12px rgba(255, 0, 0, 0.8)); }
+    100% { opacity: 1; filter: drop-shadow(0 0 2px rgba(255, 0, 0, 0.5)); }
+}
+.danger-blink {
+    background: linear-gradient(90deg, #ff003c, #ff5500) !important;
+    animation: pulse-blink 1.5s infinite ease-in-out;
+}
+</style>
+
+</div>
+
+
+<div class="bottom-nav" style="
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 70px;
+    background: #1e293b;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 9999;
+    padding-bottom: env(safe-area-inset-bottom); /* Fixar iPhones svep-streck */
+    box-sizing: border-box;
+">
+
+
+    <button class="nav-btn" onclick="import('./ui.js').then(mod => mod.switchTab('workout-section'))" style="background: none; border: none; color: #8fa0dd; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 600; width: 20%; transition: all 0.2s;">
+        <span style="font-size: 1.4rem; line-height: 1;">🏋️</span>
+        <span>Träning</span>
+    </button>
+
+    <button class="nav-btn" onclick="import('./ui.js').then(mod => mod.switchTab('history-section'))" style="background: none; border: none; color: #8fa0dd; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 600; width: 20%; transition: all 0.2s;">
+        <span style="font-size: 1.4rem; line-height: 1;">📅</span>
+        <span>Historik</span>
+    </button>
+
+    <button class="nav-btn" onclick="import('./ui.js').then(mod => mod.switchTab('achievements-section'))" style="background: none; border: none; color: #8fa0dd; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 600; width: 20%; transition: all 0.2s;">
+        <span style="font-size: 1.4rem; line-height: 1;">🏆</span>
+        <span>Mål</span>
+    </button>
+
+    <button class="nav-btn" onclick="import('./ui.js').then(mod => mod.switchTab('stats-selection'))" style="background: none; border: none; color: #8fa0dd; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 600; width: 20%; transition: all 0.2s;">
+        <span style="font-size: 1.4rem; line-height: 1;">📊</span>
+        <span>Stats</span>
+    </button>
+</div>
+
+<style>
+.bottom-nav .nav-btn.active {
+    color: #ff00d4 !important;
+    transform: scale(1.08);
+    text-shadow: 0 0 10px rgba(255, 0, 212, 0.4);
+}
+.bottom-nav .nav-btn:active {
+    transform: scale(0.92);
+}
+</style>
+
+
+
+
+<div class="main-content-wrapper" style="padding-bottom: 90px; box-sizing: border-box;">
+    </div>
+</body>
+</html>
