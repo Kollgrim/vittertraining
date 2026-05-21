@@ -121,11 +121,16 @@ export function saveAndReset(rating) {
     });
 
     // =========================================================================
-    // STEG 2: SKAPA OCH SPARA DET NYA TRÄNINGSPASSET (ENDAST ETT OBJEKT SKAPAS)
+    // STEG 2: SKAPA OCH SPARA DET NYA TRÄNINGSPASSET (DYNAMISK HÄMTNING AV GPS-DATA)
     // =========================================================================
     const dateKey = nu.toISOString(); 
     let runData = typeof currentRunData !== 'undefined' ? currentRunData : (window.currentRunData || null);
-    const isRun = (runData !== null || window.currentWorkoutType === 'run');
+    
+    // Hämta värden direkt från skärmen om elementen finns
+    const htmlDistanceEl = document.getElementById('running-distance-display');
+    const htmlTimeEl = document.getElementById('running-time-display');
+    
+    const isRun = (htmlDistanceEl !== null || runData !== null || window.currentWorkoutType === 'run');
     
     let completedWorkout = {
         date: dateKey,
@@ -134,37 +139,64 @@ export function saveAndReset(rating) {
     };
 
     if (isRun) {
-        const distans = window.currentRunDistance || (runData ? runData.dist : 5);
-        const tidIPass = window.currentRunTime || (runData ? runData.pace : 25);
-        const distKey = distans.toString();
-        
-        completedWorkout.type = 'löpning';
-        completedWorkout.isRun = true;
-        completedWorkout.distance = parseFloat(distans);
-        completedWorkout.pace = parseFloat(tidIPass);
-
-        // PB-KONTROLL FÖR LÖPNING
-        if (distans && tidIPass) {
-            console.log(`[Beatrice Motor] Säkrad löpdata hittad: ${distans}km på ${tidIPass} min. Kollar PB...`);
-            checkForNewPersonalRecord(distans, tidIPass);
+        // 🔥 DYNAMISK FIX: Hämta det exakta textvärdet från skärmen (t.ex. "5.42 km" -> 5.42)
+        let distans = runData ? runData.dist : 5;
+        if (htmlDistanceEl) {
+            distans = parseFloat(htmlDistanceEl.textContent.replace(' km', '')) || distans;
         }
 
-        const totalaSekunder = parseFloat(tidIPass) * 60;
-        const sekunderPerKm = totalaSekunder / parseFloat(distans);
+        // Räkna ut exakt tid i minuter (t.ex "25:30" blir 25.5 minuter)
+        let tidIMinuter = runData ? runData.pace : 25;
+        let tidVisningText = "00:00";
+        
+        if (htmlTimeEl) {
+            tidVisningText = htmlTimeEl.textContent;
+            const tidsDelar = tidVisningText.split(':');
+            if (tidsDelar.length === 2) {
+                const totalaSekunder = (parseInt(tidsDelar[0], 10) * 60) + parseInt(tidsDelar[1], 10);
+                tidIMinuter = parseFloat((totalaSekunder / 60).toFixed(2));
+            }
+        } else if (runData && runData.startTime) {
+            // Backup om elementet saknas: Räkna ut tid baserat på klockan
+            tidIMinuter = parseFloat(((Date.now() - runData.startTime) / 1000 / 60).toFixed(2));
+        }
+
+        // Spara till historik-objektet
+        completedWorkout.type = 'löpning';
+        completedWorkout.isRun = true;
+        completedWorkout.distance = parseFloat(distans.toFixed(2));
+        completedWorkout.pace = tidIMinuter; // Sparar den totala tiden i minuter decimalt
+        completedWorkout.durationText = tidVisningText;
+
+        // Räkna ut Tempo (Pace per km) snyggt
+        const totalaSekunderPace = tidIMinuter * 60;
+        const sekunderPerKm = distans > 0 ? (totalaSekunderPace / distans) : 0;
         const snittMinuter = Math.floor(sekunderPerKm / 60);
         const snittSekunder = Math.round(sekunderPerKm % 60);
-        const snittTidText = `${snittMinuter}:${snittSekunder.toString().padStart(2, '0')} min/km`;
+        const snittTidText = distans > 0 ? `${snittMinuter}:${snittSekunder.toString().padStart(2, '0')} min/km` : "0:00 min/km";
 
-        completedWorkout.info = `🏃 Löpning ${distKey} km (${tidIPass} min)<br>⏱️ Snitt: ${snittTidText}`;
+        // Använd den exakta distansen för runda av nyckeln för PB-databasen (t.ex. "5" eller "10")
+        const distKey = Math.round(distans).toString();
+
+        completedWorkout.info = `🏃 Löpning ${distans.toFixed(2)} km (${tidVisningText})<br>⏱️ Snitt: ${snittTidText}`;
+
+        // PB-KONTROLL FÖR LÖPNING
+        if (distans > 0 && tidIMinuter > 0) {
+            console.log(`[Beatrice Motor] Säkrad löpdata registrerad: ${distans.toFixed(2)}km på ${tidVisningText}. Kollar PB...`);
+            if (typeof checkForNewPersonalRecord === 'function') {
+                checkForNewPersonalRecord(distans, tidIMinuter);
+            }
+        }
 
         if (!activeData.pb) {
             activeData.pb = { "5": null, "10": null };
         }
 
-        if (activeData.pb[distKey] === null || parseFloat(tidIPass) < parseFloat(activeData.pb[distKey])) {
-            activeData.pb[distKey] = parseFloat(parseFloat(tidIPass).toFixed(2));
+        // Kontrollera om det är ett personbästa för den specifika distansklassen (t.ex. 5km eller 10km)
+        if ((distKey === "5" || distKey === "10") && (activeData.pb[distKey] === null || tidIMinuter < parseFloat(activeData.pb[distKey]))) {
+            activeData.pb[distKey] = parseFloat(tidIMinuter.toFixed(2));
             console.log(`[Beatrice] Nytt PB för ${distKey}km!`);
-            completedWorkout.info = `⭐ <b>NYTT PB!</b> ⭐<br>🏃 ${distKey} km på ${tidIPass} min<br>⏱️ Snitt: ${snittTidText}`;
+            completedWorkout.info = `⭐ <b>NYTT PB!</b> ⭐<br>🏃 ${distans.toFixed(2)} km på ${tidVisningText}<br>⏱️ Snitt: ${snittTidText}`;
             completedWorkout.isPB = true; 
             
             if (typeof playBeatriceSound === 'function') {
@@ -273,258 +305,48 @@ export function saveAndReset(rating) {
     // =========================================================================
     const regler = [
     // --- ANTAL PASS ---
-    { 
-        id: 'badge-starter', 
-        upplåst: passEfter >= 1, 
-        varUpplåst: passInnan >= 1, 
-        icon: '🌱', 
-        title: 'Första steget', 
-        desc: 'Du har slutfört ditt allra första träningspass. Grym start!' 
-    },
-    { 
-        id: 'badge-master5', 
-        upplåst: passEfter >= 5, 
-        varUpplåst: passInnan >= 5, 
-        icon: '🥉', 
-        title: 'Kommit igång', 
-        desc: '5 hela träningspass genomförda. Snyggt arbetat!' 
-    },
-    { 
-        id: 'badge-veteran15', 
-        upplåst: passEfter >= 15, 
-        varUpplåst: passInnan >= 15, 
-        icon: '🥈', 
-        title: 'Rutinerad', 
-        desc: '15 slutförda träningspass! Beatrice är djupt imponerad.' 
-    },
-    { 
-        id: 'badge-champion30', 
-        upplåst: passEfter >= 30, 
-        varUpplåst: passInnan >= 30, 
-        icon: '🥇', 
-        title: 'Träningsnörd', 
-        desc: '30 slutförda träningspass! Beatrice känner att hon gör skillnad.' 
-    },
-    { 
-        id: 'badge-legend50', 
-        upplåst: passEfter >= 50, 
-        varUpplåst: passInnan >= 50, 
-        icon: '👑', 
-        title: 'Legendarisk', 
-        desc: '50 träningspass! Du har byggt en fantastisk rutin.' 
-    },
-    { 
-        id: 'badge-immortal100', 
-        upplåst: passEfter >= 100, 
-        varUpplåst: passInnan >= 100, 
-        icon: '🌌', 
-        title: 'Odödlig', 
-        desc: '100 träningspass genomförda. Du har nått en helt utomjordisk niveau!' 
-    },
+    { id: 'badge-starter', upplåst: passEfter >= 1, varUpplåst: passInnan >= 1, icon: '🌱', title: 'Första steget', desc: 'Du har slutfört ditt allra första träningspass. Grym start!' },
+    { id: 'badge-master5', upplåst: passEfter >= 5, varUpplåst: passInnan >= 5, icon: '🥉', title: 'Kommit igång', desc: '5 hela träningspass genomförda. Snyggt arbetat!' },
+    { id: 'badge-veteran15', upplåst: passEfter >= 15, varUpplåst: passInnan >= 15, icon: '🥈', title: 'Rutinerad', desc: '15 slutförda träningspass! Beatrice är djupt imponerad.' },
+    { id: 'badge-champion30', upplåst: passEfter >= 30, varUpplåst: passInnan >= 30, icon: '🥇', title: 'Träningsnörd', desc: '30 slutförda träningspass! Beatrice känner att hon gör skillnad.' },
+    { id: 'badge-legend50', upplåst: passEfter >= 50, varUpplåst: passInnan >= 50, icon: '👑', title: 'Legendarisk', desc: '50 träningspass! Du har byggt en fantastisk rutin.' },
+    { id: 'badge-immortal100', upplåst: passEfter >= 100, varUpplåst: passInnan >= 100, icon: '🌌', title: 'Odödlig', desc: '100 träningspass genomförda. Du har nått en helt utomjordisk niveau!' },
 
     // --- STREAKS ---
-    { 
-        id: 'badge-streak2', 
-        upplåst: streakEfter >= 2, 
-        varUpplåst: streakInnan >= 2, 
-        icon: '🔥', 
-        title: 'Dubbelpipig', 
-        desc: 'Hållt igång i 2 veckor i rad! Snyggt streak-flow.' 
-    },
-    { 
-        id: 'badge-streak4', 
-        upplåst: streakEfter >= 4, 
-        varUpplåst: streakInnan >= 4, 
-        icon: '⚡', 
-        title: 'Månadsrökare', 
-        desc: '4 veckors oavbruten träning! Du har etablerat vanan nu.' 
-    },
-    { 
-        id: 'badge-streak8', 
-        upplåst: streakEfter >= 8, 
-        varUpplåst: streakInnan >= 8, 
-        icon: '☄️', 
-        title: 'Ostoppbar', 
-        desc: '8 veckors streak! Det här är mer än bara träning, du är ostoppbar.' 
-    },
-    { 
-        id: 'badge-streak12', 
-        upplåst: streakEfter >= 12, 
-        varUpplåst: streakInnan >= 12, 
-        icon: '🌋', 
-        title: 'Livsstil', 
-        desc: '12 veckor i rad! Träningen har officiellt blivit en del av din livsstil.' 
-    },
+    { id: 'badge-streak2', upplåst: streakEfter >= 2, varUpplåst: streakInnan >= 2, icon: '🔥', title: 'Dubbelpipig', desc: 'Hållt igång i 2 veckor i rad! Snyggt streak-flow.' },
+    { id: 'badge-streak4', upplåst: streakEfter >= 4, varUpplåst: streakInnan >= 4, icon: '⚡', title: 'Månadsrökare', desc: '4 veckors oavbruten träning! Du har etablerat vanan nu.' },
+    { id: 'badge-streak8', upplåst: streakEfter >= 8, varUpplåst: streakInnan >= 8, icon: '☄️', title: 'Ostoppbar', desc: '8 veckors streak! Det här är mer än bara träning, du är ostoppbar.' },
+    { id: 'badge-streak12', upplåst: streakEfter >= 12, varUpplåst: streakInnan >= 12, icon: '🌋', title: 'Livsstil', desc: '12 veckor i rad! Träningen har officiellt blivit en del av din livsstil.' },
 
     // --- SPECIFIKA PASS OCH EXPERTIS ---
-    { 
-        id: 'badge-hattrick', 
-        upplåst: (pass1Efter >= 1 && pass2Efter >= 1 && pass3Efter >= 1), 
-        varUpplåst: (pass1Innan >= 1 && pass2Innan >= 1 && pass3Innan >= 1), 
-        icon: '🎩', 
-        title: 'Hattrick', 
-        desc: 'Kört Pass 1, 2 & 3 minst en gång vardera!' 
-    },
-    { 
-        id: 'badge-pass1-expert', 
-        upplåst: pass1Efter >= 5, 
-        varUpplåst: pass1Innan >= 5, 
-        icon: '💪', 
-        title: 'Biffig Överkropp', 
-        desc: 'Du har slutfört Pass 1 (Armar & Överkropp) fem gånger!' 
-    },
-    { 
-        id: 'badge-pass2-expert', 
-        upplåst: pass2Efter >= 5, 
-        varUpplåst: pass2Innan >= 5, 
-        icon: '🍗', 
-        title: 'Ben av Stål', 
-        desc: 'Grymt! Du har kört benpasset (Pass 2) fem gånger.' 
-    },
-    { 
-        id: 'badge-pass3-expert', 
-        upplåst: pass3Efter >= 5, 
-        varUpplåst: pass3Innan >= 5, 
-        icon: '🛡️', 
-        title: 'Core-Kungen', 
-        desc: 'Stabilt! Du har kört mag- och bålpasset (Pass 3) fem gånger.' 
-    },
+    { id: 'badge-hattrick', upplåst: (pass1Efter >= 1 && pass2Efter >= 1 && pass3Efter >= 1), varUpplåst: (pass1Innan >= 1 && pass2Innan >= 1 && pass3Innan >= 1), icon: '🎩', title: 'Hattrick', desc: 'Kört Pass 1, 2 & 3 minst en gång vardera!' },
+    { id: 'badge-pass1-expert', upplåst: pass1Efter >= 5, varUpplåst: pass1Innan >= 5, icon: '💪', title: 'Biffig Överkropp', desc: 'Du har slutfört Pass 1 (Armar & Överkropp) fem gånger!' },
+    { id: 'badge-pass2-expert', upplåst: pass2Efter >= 5, varUpplåst: pass2Innan >= 5, icon: '🍗', title: 'Ben av Stål', desc: 'Grymt! Du har kört benpasset (Pass 2) fem gånger.' },
+    { id: 'badge-pass3-expert', upplåst: pass3Efter >= 5, varUpplåst: pass3Innan >= 5, icon: '🛡️', title: 'Core-Kungen', desc: 'Stabilt! Du har kört mag- och bålpasset (Pass 3) fem gånger.' },
 
     // --- LÖPNING OCH HYBRID ---
-    { 
-        id: 'badge-hybrid', 
-        upplåst: (styrkaAntalEfter >= 5 && lopAntalEfter >= 5), 
-        varUpplåst: (styrkaAntalInnan >= 5 && lopAntalInnan >= 5), 
-        icon: '🧬', 
-        title: 'Hybridatlet', 
-        desc: 'Minst 5 styrkepass och 5 löppass registrerade.' 
-    },
-    { 
-        id: 'badge-run-first', 
-        upplåst: lopAntalEfter >= 1, 
-        varUpplåst: lopAntalInnan >= 1, 
-        icon: '👟', 
-        title: 'Jungfruturen', 
-        desc: 'Milstolpe nådd! Du har loggat ditt allra första löppass.' 
-    },
-    { 
-        id: 'badge-run-5k', 
-        upplåst: harSprungit5kEfter, 
-        varUpplåst: harSprungit5kInnan, 
-        icon: '🖐️', 
-        title: 'Femman Säkrad', 
-        desc: 'Snyggt sprunget! Du har avverkat en distans på minst 5 km.' 
-    },
-    { 
-        id: 'badge-run-10k', 
-        upplåst: harSprungit10kEfter, 
-        varUpplåst: harSprungit10kInnan, 
-        icon: '🔟', 
-        title: 'Milen-Klubben', 
-        desc: 'Respekt! Du sprang över en mil och säkrade 10-kilometersmärket.' 
-    },
-    { 
-        id: 'badge-run-volume', 
-        upplåst: totalKmEfter >= 42, 
-        varUpplåst: totalKmInnan >= 42, 
-        icon: '🗺️', 
-        title: 'Maratondistans', 
-        desc: 'Du har samlat ihop totalt över 42 km löpning i din historik.' 
-    },
+    { id: 'badge-hybrid', upplåst: (styrkaAntalEfter >= 5 && lopAntalEfter >= 5), varUpplåst: (styrkaAntalInnan >= 5 && lopAntalInnan >= 5), icon: '🧬', title: 'Hybridatlet', desc: 'Minst 5 styrkepass och 5 löppass registrerade.' },
+    { id: 'badge-run-first', upplåst: lopAntalEfter >= 1, varUpplåst: lopAntalInnan >= 1, icon: '👟', title: 'Jungfruturen', desc: 'Milstolpe nådd! Du har loggat ditt allra första löppass.' },
+    { id: 'badge-run-5k', upplåst: harSprungit5kEfter, varUpplåst: harSprungit5kInnan, icon: '🖐️', title: 'Femman Säkrad', desc: 'Snyggt sprunget! Du har avverkat en distans på minst 5 km.' },
+    { id: 'badge-run-10k', upplåst: harSprungit10kEfter, varUpplåst: harSprungit10kInnan, icon: '🔟', title: 'Milen-Klubben', desc: 'Respekt! Du sprang över en mil och säkrade 10-kilometersmärket.' },
+    { id: 'badge-run-volume', upplåst: totalKmEfter >= 42, varUpplåst: totalKmInnan >= 42, icon: '🗺️', title: 'Maratondistans', desc: 'Du har samlat ihop totalt över 42 km löpning i din historik.' },
 
     // --- KÄNSLA OCH INTENSITET ---
-    { 
-        id: 'badge-feel-hard', 
-        upplåst: difficultEfter >= 1, 
-        varUpplåst: difficultInnan >= 1, 
-        icon: '🥵', 
-        title: 'Blod, Svett & Tårar', 
-        desc: 'Slutfört ditt allra första "Svårt"-pass. Enormt pannben!' 
-    },
-    { 
-        id: 'badge-feel-easy', 
-        upplåst: easyEfter >= 3, 
-        varUpplåst: easyInnan >= 3, 
-        icon: '🍦', 
-        title: 'En Dag på Stranden', 
-        desc: 'Du har registrerat 3 lätta, kontrollerade och stabila träningspass!' 
-    },
-    { 
-        id: 'badge-warrior', 
-        upplåst: difficultEfter >= 5, 
-        varUpplåst: difficultInnan >= 5, 
-        icon: '🧌', 
-        title: 'Pannbens-Krigare', 
-        desc: 'Respekt! Du har tagit dig igenom hela 5 stycken extremt svåra pass!' 
-    },
+    { id: 'badge-feel-hard', upplåst: difficultEfter >= 1, varUpplåst: difficultInnan >= 1, icon: '🥵', title: 'Blod, Svett & Tårar', desc: 'Slutfört ditt allra första "Svårt"-pass. Enormt pannben!' },
+    { id: 'badge-feel-easy', upplåst: easyEfter >= 3, varUpplåst: easyInnan >= 3, icon: '🍦', title: 'En Dag på Stranden', desc: 'Du har registrerat 3 lätta, kontrollerade och stabila träningspass!' },
+    { id: 'badge-warrior', upplåst: difficultEfter >= 5, varUpplåst: difficultInnan >= 5, icon: '🧌', title: 'Pannbens-Krigare', desc: 'Respekt! Du har tagit dig igenom hela 5 stycken extremt svåra pass!' },
 
     // --- REKORD OCH PRESTATION ---
-    { 
-        id: 'badge-pb-any', 
-        upplåst: harSattPBEfter, 
-        varUpplåst: harSattPBInnan, 
-        icon: '⭐', 
-        title: 'Rekordkrossare', 
-        desc: 'Snyggt! Du har satt ett nytt personbästa i löparspåret.' 
-    },
-    { 
-        id: 'badge-pace-speedy', 
-        upplåst: harHålltTempoUnder5Efter, 
-        varUpplåst: harHålltTempoUnder5Innan, 
-        icon: '🚀', 
-        title: 'Ljudvallen', 
-        desc: 'Blixtsnabbt! Du har hållt ett genomsnittligt löptempo under 5:00 min/km.' 
-    },
-    { 
-        id: 'badge-timer-heavy', 
-        upplåst: harKörtTungTimerEfter, 
-        varUpplåst: harKörtTungTimerInnan, 
-        icon: '⏳', 
-        title: 'Uthållig Kämpe', 
-        desc: 'Du har kört ett tungt styrkepass konfigurerat med 60 sekunder eller mer per set!' 
-    },
+    { id: 'badge-pb-any', upplåst: harSattPBEfter, varUpplåst: harSattPBInnan, icon: '⭐', title: 'Rekordkrossare', desc: 'Snyggt! Du har satt ett nytt personbästa i löparspåret.' },
+    { id: 'badge-pace-speedy', upplåst: harHålltTempoUnder5Efter, varUpplåst: harHålltTempoUnder5Innan, icon: '🚀', title: 'Ljudvallen', desc: 'Blixtsnabbt! Du har hållt ett genomsnittligt löptempo under 5:00 min/km.' },
+    { id: 'badge-timer-heavy', upplåst: harKörtTungTimerEfter, varUpplåst: harKörtTungTimerInnan, icon: '⏳', title: 'Uthållig Kämpe', desc: 'Du har kört ett tungt styrkepass konfigurerat med 60 sekunder eller mer per set!' },
 
     // --- TIDPUNKTER OCH SCHEMA ---
-    { 
-        id: 'badge-early-bird', 
-        upplåst: harTränatMorgonEfter, 
-        varUpplåst: harTränatMorgonInnan, 
-        icon: '🐓', 
-        title: 'Morgonpigg', 
-        desc: 'Disciplinerat! Du genomförde och slutförde din träning före klockan 08:00.' 
-    },
-    { 
-        id: 'badge-night-owl', 
-        upplåst: harTränatNattEfter, 
-        varUpplåst: harTränatNattInnan, 
-        icon: '🦇', 
-        title: 'Nattugglan', 
-        desc: 'Nattaktiv kämpe! Ett helt träningspass slutfört efter klockan 21:00.' 
-    },
-    { 
-        id: 'badge-weekend', 
-        upplåst: harTränatHelgEfter, 
-        varUpplåst: harTränatHelgInnan, 
-        icon: '🍻', 
-        title: 'Helgkrigare', 
-        desc: 'Ingen helgvila här inte! Du slutförde ett träningspass under en lördag eller söndag.' 
-    },
-    { 
-        id: 'badge-loyal', 
-        upplåst: unikaDagarEfter.size >= 5, 
-        varUpplåst: unikaDagarInnan.size >= 5, 
-        icon: '💎', 
-        title: 'Lojal Klient', 
-        desc: 'Fantastisk hängivenhet! Du har registrerat träning på minst 5 olika veckodagar totalt.' 
-    },
-    { 
-        id: 'badge-perfect-week', 
-        upplåst: passDennaVeckaEfter >= 3, 
-        varUpplåst: passDennaVeckaInnan >= 3, 
-        icon: '🌟', 
-        title: 'Perfekt Vecka', 
-        desc: 'Snyggt planerat! Du har kört minst 3 kompletta träningspass under denna kalendervecka.' 
-    }
+    { id: 'badge-early-bird', upplåst: harTränatMorgonEfter, varUpplåst: harTränatMorgonInnan, icon: '🐓', title: 'Morgonpigg', desc: 'Disciplinerat! Du genomförde och slutförde din träning före klockan 08:00.' },
+    { id: 'badge-night-owl', upplåst: harTränatNattEfter, varUpplåst: harTränatNattInnan, icon: '🦇', title: 'Nattugglan', desc: 'Nattaktiv kämpe! Ett helt träningspass slutfört efter klockan 21:00.' },
+    { id: 'badge-weekend', upplåst: harTränatHelgEfter, varUpplåst: harTränatHelgInnan, icon: '🍻', title: 'Helgkrigare', desc: 'Ingen helgvila här inte! Du slutförde ett träningspass under en lördag eller söndag.' },
+    { id: 'badge-loyal', upplåst: unikaDagarEfter.size >= 5, varUpplåst: unikaDagarInnan.size >= 5, icon: '💎', title: 'Lojal Klient', desc: 'Fantastisk hängivenhet! Du har registrerat träning på minst 5 olika veckodagar totalt.' },
+    { id: 'badge-perfect-week', upplåst: passDennaVeckaEfter >= 3, varUpplåst: passDennaVeckaInnan >= 3, icon: '🌟', title: 'Perfekt Vecka', desc: 'Snyggt planerat! Du har kört minst 3 kompletta träningspass under denna kalendervecka.' }
 ];
 
     const antalAndraUpplastaInnan = regler.filter(r => r.upplåst).length;
@@ -565,7 +387,7 @@ export function saveAndReset(rating) {
         else if (typeof window.goHomeDirectly === 'function') window.goHomeDirectly();
         else {
             const timerDisplay = document.getElementById('timer-display');
-            const startBtn = document.getElementById('start-btn');
+            const startBtn = document.getElementById('start-btn-container');
             if (timerDisplay) timerDisplay.style.display = 'none';
             if (startBtn) startBtn.style.display = 'block';
         }
@@ -605,28 +427,22 @@ export function saveAndReset(rating) {
     window.currentRunDistance = null;
     window.currentRunTime = null;
 
-    // Släpp modulspärren efter 1.5 sekund
-    setTimeout(() => {
-        isSaving = false;
-    }, 1500);
-    // ⬇️ LÄGG TILL DETTA PRECIS INNAN FUNKTIONEN AVSLUTAS ELLER DÄR DU GÖMMER RATING-MODALEN:
+    // Återställ och visa tränings- och löpningsväljarna på startskärmen igen
+    const passSelector = document.getElementById('pass-selector');
+    const runSelector = document.getElementById('run-selector');
 
-// Återställ och visa tränings- och löpningsväljarna på startskärmen igen
-const passSelector = document.getElementById('pass-selector');
-const runSelector = document.getElementById('run-selector');
+    if (passSelector) passSelector.style.display = 'flex'; 
+    if (runSelector) runSelector.style.display = 'block';
 
-if (passSelector) passSelector.style.display = 'flex'; // eller 'flex' beroende på din CSS layout
-if (runSelector) runSelector.style.display = 'block';
+    // Stäng betygsskärmen
+    const ratingModal = document.getElementById('ratingModal');
+    if (ratingModal) {
+        ratingModal.style.display = 'none';
+    }
 
-// Stäng betygsskärmen (Säkerställ att detta görs)
-const ratingModal = document.getElementById('ratingModal');
-if (ratingModal) {
-    ratingModal.style.display = 'none';
-}
-
-// Släpp modulspärren så att man kan spara nästa pass i framtiden
-isSaving = false; 
-console.log("[Beatrice Motor] Passet sparat och startskärmens knappar är återställda!");
+    // Släpp modulspärren så att man kan spara nästa pass i framtiden
+    isSaving = false; 
+    console.log("[Beatrice Motor] Passet sparat och startskärmens knappar är återställda!");
 }
 
 window.saveAndReset = saveAndReset;

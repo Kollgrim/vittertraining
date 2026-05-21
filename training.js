@@ -15,6 +15,15 @@ export let currentTimelineIdx = 0;
 export let currentWorkoutTimeLeft = 0;
 export let isWarmup = false;
 
+// GPS-variabler för realtidsmätning
+export let gpsWatchId = null;
+export let lastGpsCoords = null;
+export let totalGpsDistanceKm = 0;
+export let runTimerInterval = null;
+export let runStartTime = null;        // Håller reda på klockslaget när löpningen startade
+export let lastAnnouncedKm = 0;        // Håller reda på den senast upplästa kilometern (1, 2, 3...)
+
+
 // Beroende på ditt nuvarande gränssnitt håller vi koll på aktivt program-ID globalt i modulen
 let currentProgramId = 1;
 
@@ -24,6 +33,9 @@ let currentProgramId = 1;
  */
 export function startRun(dist) {
     console.log(`[Beatrice] startRun anropad för: ${dist} km`);
+    
+    // Nollställ röst-kilometerräknaren inför passet
+    lastAnnouncedKm = 0;
 
     // 🔥 GÖM ALLA PASS- OCH LÖP-KORT NÄR LÖPNINGEN STARTAR
     const workoutGrid = document.querySelector('.workout-cards-grid');
@@ -31,8 +43,6 @@ export function startRun(dist) {
 
     const runGrid = document.querySelector('.run-cards-grid');
     if (runGrid) runGrid.style.display = 'none';
-
-
     
     // SÄKRA KONTROLLER: Dölj väljare och startknappar OM de existerar i HTML
     const passSelector = document.getElementById('pass-selector');
@@ -41,7 +51,7 @@ export function startRun(dist) {
     const runSelector = document.getElementById('run-selector');
     if (runSelector) runSelector.style.display = 'none';
     
-    const startBtn = document.getElementById('start-btn');
+    const startBtn = document.getElementById('start-btn-container');
     if (startBtn) startBtn.style.display = 'none';
     
     // 🔥 FIX: Tvinga fram tidsdisplayen så att nedräkningen syns direkt under löpningen!
@@ -65,7 +75,7 @@ export function startRun(dist) {
     
     let countdown = 10;
     
-    // Säkra uppdateringar av textfält
+    // Säkra uppdateringar av textfält under nedräkningen
     const timerTask = document.getElementById('timer-task');
     const timerSet = document.getElementById('timer-set');
     const timerTime = document.getElementById('timer-time');
@@ -84,8 +94,38 @@ export function startRun(dist) {
             playBeep(true);
             playBeatriceSound('löp');
             
-            const startTime = Date.now();
-            currentRunData = { dist: dist, startTime: startTime };
+            // 🏃 SKARPT LÄGE: Löpningen startar NU efter 10 sekunder!
+            runStartTime = Date.now(); // Sätt den exakta starttiden nu!
+            currentRunData = { dist: dist, startTime: runStartTime };
+
+            // 🚀 Starta den fysiska GPS-mätningen nu när man faktiskt börjar springa
+            startGpsTracking();
+
+            // ⏱️ STARTA LIVE-TIMERN: Denna uppdaterar "Tid i rörelse" varje sekund
+            if (runTimerInterval) clearInterval(runTimerInterval);
+            runTimerInterval = setInterval(() => {
+                const totaltGattMs = Date.now() - runStartTime;
+                const totaltGattSekunder = Math.floor(totaltGattMs / 1000);
+                
+                const minuter = Math.floor(totaltGattSekunder / 60);
+                const sekunder = totaltGattSekunder % 60;
+                
+                const displayMin = minuter < 10 ? `0${minuter}` : minuter;
+                const displaySek = sekunder < 10 ? `0${sekunder}` : sekunder;
+                
+                const timeEl = document.getElementById('running-time-display');
+                if (timeEl) {
+                    timeEl.textContent = `${displayMin}:${displaySek}`;
+                }
+            }, 1000);
+
+            // 🔥 STÄDNING: Dölj den gamla stora cirkeln och gamla texten som spökade i bakgrunden
+            if (timerTime) timerTime.style.display = 'none';
+            if (timerTask) timerTask.style.display = 'none';
+            if (timerSet)  timerSet.style.display = 'none';
+            
+            const circleTimer = document.querySelector('.circle-timer') || document.querySelector('.timer-circle');
+            if (circleTimer) circleTimer.style.display = 'none';
 
             // Säker hantering av overlays
             const overlay = document.getElementById('run-finish-overlay');
@@ -98,9 +138,6 @@ export function startRun(dist) {
             if (finishBtn) {
                 finishBtn.onclick = () => stopRunClock();
             }
-            
-            if (timerTask) timerTask.innerText = "SPRING!";
-            if (timerTime) timerTime.innerText = "GO!";
         }
     }, 1000);
 }
@@ -120,7 +157,7 @@ export function startWorkout(programId) {
     if (runGrid) runGrid.style.display = 'none';
     
     // Göm även startknappen eftersom passet redan har startat
-    const startBtn = document.getElementById('start-btn');
+    const startBtn = document.getElementById('start-btn-container');
     if (startBtn) startBtn.style.display = 'none';
    
     // 1. Om inget ID skickades med från knappen, hämta det som är valt globalt eller i fönstret
@@ -195,7 +232,7 @@ export function startWorkout(programId) {
             });
             
             // Lägg till vila efter varje set
-            currentWorkoutTimeline.push({ task: "Vila", duration: 40 });
+            currentWorkoutTimeline.push({ task: "Vila", duration: 2 });
         }
     });
     
@@ -295,7 +332,7 @@ export function runWorkoutTimeline() {
                 playBeatriceSound('avslutatPass');
                 
                 document.getElementById('timer-display').style.display = 'none';
-                if (document.getElementById('start-btn')) document.getElementById('start-btn').style.display = 'block';
+                if (document.getElementById('start-btn-container')) document.getElementById('start-btn-container').style.display = 'block';
                 
                 // Sätt en flagga eller spara information om att det var STYRKA som kördes
                 window.currentWorkoutType = 'strength';
@@ -462,7 +499,7 @@ export function selectPass(programId) {
                 </div>
                 <div class="exercise-right">
                     <span class="set-badge" style="background-color: #8a2be2; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold;">
-                    ${data.sets || 3} set × ${data.seconds || 60}s
+                    ${data.sets || 3} set × ${data.seconds || 10}s
                     </span>
                 </div>
             `;
@@ -474,7 +511,7 @@ export function selectPass(programId) {
     }
 
     // 🔥 FIX: Tvinga fram "Starta passet"-knappen först NU när ett pass har klickats i!
-    const startBtn = document.getElementById('start-btn');
+    const startBtn = document.getElementById('start-btn-container');
     if (startBtn) {
         startBtn.style.display = 'block';
     }
@@ -710,6 +747,12 @@ export function devSkipToEnd() {
 // === UPPDATERAD OCH SÄKRAD STOPPFUNKTION FÖR LÖPNING ===
 window.stopRunClock = function() {
     console.log("[Beatrice Timer] stopRunClock körs. Stoppar intervallet direkt...");
+    if (runTimerInterval) {
+    clearInterval(runTimerInterval);
+    runTimerInterval = null;
+    }
+    // Stäng av GPS:en när passet är över för att spara på användarens batteri
+    stopGpsTracking();
     
     // 1. Stoppa klockan genom att rensa intervallet
     if (typeof timerInterval !== 'undefined') {
@@ -744,7 +787,7 @@ window.stopRunClock = function() {
     if (runOverlay) runOverlay.style.display = 'none';
     
     // Återställ startknappen i bakgrunden så den är redo till nästa gång
-    const startBtn = document.getElementById('start-btn');
+    const startBtn = document.getElementById('start-btn-container');
     if (startBtn) {
         startBtn.textContent = 'STARTA PASSET';
         startBtn.style.display = 'block';
@@ -822,6 +865,121 @@ export function resumeWorkout() {
         }, 1000);
     }
     console.log("[Beatrice Motor] Passet har återupptagits.");
+}
+/**
+ * Haversine-formeln: Räknar ut avståndet i kilometer mellan två GPS-punkter
+ */
+function calculateDistanceBetweenPoints(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Jordens radie i km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distans i km
+}
+
+/**
+ * Startar GPS-spårningen och lyssnar på telefonens rörelser
+ */
+export function startGpsTracking() {
+    if (!("geolocation" in navigator)) {
+        console.warn("[Beatrice GPS] Den här enheten saknar GPS-stöd.");
+        return;
+    }
+
+    // Nollställ mätaren inför det nya passet
+    totalGpsDistanceKm = 0;
+    lastGpsCoords = null;
+
+    console.log("[Beatrice GPS] Startar positionsspårning...");
+
+    // watchPosition körs automatiskt varje gång telefonen rör sig och får en ny GPS-punkt
+    gpsWatchId = navigator.geolocation.watchPosition(
+        (position) => {
+            const { latitude, longitude, accuracy } = position.coords;
+            
+            // Säkerhetsspärr: Ignorera punkter med jättedålig noggrannhet (> 30 meter)
+            // Det hindrar att distansen "hoppar" när man står stilla inomhus vid start
+            if (accuracy > 30) return; 
+
+            if (lastGpsCoords) {
+                // Räkna ut hur långt vi sprungit sedan förra mätningen
+                const segmentDistance = calculateDistanceBetweenPoints(
+                    lastGpsCoords.latitude,
+                    lastGpsCoords.longitude,
+                    latitude,
+                    longitude
+                );
+
+                totalGpsDistanceKm += segmentDistance;
+                
+                // Runda av snyggt till två decimaler (t.ex. 1.24 km)
+                const visningsDistans = totalGpsDistanceKm.toFixed(2);
+                
+                // 🔄 UPPDATERA UI: Uppdatera texten på skärmen live
+                const runningDistanceEl = document.getElementById('running-distance-display');
+                if (runningDistanceEl) {
+                    runningDistanceEl.textContent = `${visningsDistans} km`;
+                }
+
+                // 🎙️ BEATRICE RÖSTFEEDBACK VID VARJE KILOMETER
+                const nuvarandeHelKm = Math.floor(totalGpsDistanceKm); // Blir 1, 2, 3 osv när gränsen passeras
+
+                if (nuvarandeHelKm > lastAnnouncedKm) {
+                    lastAnnouncedKm = nuvarandeHelKm; // Lås så detta bara körs EN gång per km
+
+                    // 1. Räkna ut hur många minuter som gått totalt sedan start
+                    const totaltGattMs = Date.now() - runStartTime;
+                    const totaltGattMinuter = totaltGattMs / 1000 / 60; // Omvandla millisekunder till minuter
+
+                    // 2. Räkna ut snittid per kilometer (Pace)
+                    const snittTidPerKm = totaltGattMinuter / totalGpsDistanceKm;
+
+                    // 3. Dela upp snittiden i hela minuter och sekunder snyggt för uppläsning
+                    const paceMinuter = Math.floor(snittTidPerKm);
+                    const paceSekunder = Math.round((snittTidPerKm - paceMinuter) * 60);
+
+                    // Formatera sekunderna så det låter bra (t.ex. "noll fem" istället för "fem")
+                    const sekunderText = paceSekunder < 10 ? `noll ${paceSekunder}` : paceSekunder;
+
+                    // 4. Bygg meddelandet till Beatrice
+                    const meddelande = `${nuvarandeHelKm} kilometer klar. Snittid, ${paceMinuter} minuter och ${sekunderText} sekunder per kilometer. Snyggt jobbat, fortsätt så!`;
+
+                    // 5. Be Beatrice att tala!
+                    if (typeof window.speakText === 'function') {
+                        window.speakText(meddelande);
+                    } else {
+                        console.log("[Beatrice Röst] Skulle ha sagt: " + meddelande);
+                    }
+                }
+            }
+
+            // Spara nuvarande koordinater till nästa uppdatering
+            lastGpsCoords = { latitude, longitude };
+        },
+        (error) => {
+            console.error("[Beatrice GPS] Fel vid positionsbestämning:", error.message);
+        },
+        {
+            enableHighAccuracy: true, // Tvingar telefonen att använda hårdvaru-GPS (inte bara wifi/master)
+            timeout: 10000,           // Vänta max 10 sekunder på signal
+            maximumAge: 0             // Hämta inte gamla cachade positioner
+        }
+    );
+}
+
+/**
+ * Stänger av GPS-hårdvaran för att spara batteri
+ */
+export function stopGpsTracking() {
+    if (gpsWatchId !== null) {
+        navigator.geolocation.clearWatch(gpsWatchId);
+        gpsWatchId = null;
+        lastGpsCoords = null;
+        console.log("[Beatrice GPS] GPS-spårning avstängd.");
+    }
 }
 
 // Gör funktionen tillgänglig för HTML-knappen

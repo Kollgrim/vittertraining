@@ -1,6 +1,6 @@
 // Importera start- och styrfunktioner från dina moduler
 // Ändra denna rad längst upp i app.js:
-import { data, programs, saveDatabase } from './database.js';
+import { data, programs, saveDatabase, loadDatabaseFromCloud, USER_ID } from './database.js';
 import { startWorkout, startRun, selectPass, pauseWorkout, resumeWorkout } from './training.js';
 import { saveAndReset, clearHistory } from './history.js';
 import { initUI, switchTab } from './ui.js';
@@ -30,18 +30,33 @@ window.speakText = (text) => speak(text);
 // ==========================================
 // STARTA APPEN NÄR SIDAN HAR LADDATS
 // ==========================================
-window.addEventListener('DOMContentLoaded', () => {
-    console.log("Beatrice Engine: ES-moduler laddade suveränt!");
-    
-    // Kör igång din UI-initiering (ritar upp streaks, medaljer, etc.)
-    if (typeof initUI === 'function') {
-        initUI();
-    }
 
-    // Tvinga fram renderingen av dina personbästan på knapparna direkt vid start!
-    if (typeof window.updateButtonPBs === 'function') {
-        window.updateButtonPBs();
-    }
+
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log("[Beatrice] Startar appen och synkar mot molnet...");
+    
+    // ☁️ Hämta senaste datan från molnet DIREKT vid start
+    await loadDatabaseFromCloud();
+    
+    // 🔄 Uppdatera dina vyer med den nya datan från molnet
+    if (typeof renderStatistics === 'function') renderStatistics();
+    if (typeof initUI === 'function') initUI();
+
+    // Dölj startskärmen efter 2.5 sekunder och byt flik
+    setTimeout(() => {
+        const splash = document.getElementById('splash-screen');
+        if (splash) {
+            splash.classList.add('fade-out');
+            
+            setTimeout(() => {
+                if (typeof window.switchTab === 'function') {
+                    window.switchTab('workout-section');
+                } else {
+                    console.warn("[Beatrice] switchTab hittades inte på window-objektet.");
+                }
+            }, 500);
+        }
+    }, 2500); 
 });
 
 /*// === DEFINIERA SPARNINGEN EN GÅNG FÖR ALLA ===
@@ -137,6 +152,10 @@ function toggleSettingsModal() {
             modal.style.display = 'flex';
         }
     }
+    const idDisplay = document.getElementById('settings-user-id');
+if (idDisplay && window.USER_ID) {
+    idDisplay.textContent = window.USER_ID;
+}
 }
 
 // Funktion för att öppna/stänga streak-informationen
@@ -176,6 +195,83 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2500); 
 });
 
+
+/**
+ * Kopierar användarens unika moln-ID till telefonens urklipp
+ */
+export function copyUserID() {
+    if (!window.USER_ID) return;
+    
+    navigator.clipboard.writeText(window.USER_ID).then(() => {
+        const copyBtn = document.getElementById('copy-id-btn');
+        if (copyBtn) {
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = "✅ Kopierat!";
+            copyBtn.style.background = "#2ecc71";
+            
+            // Återställ knappens utseende efter 2 sekunder
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+                copyBtn.style.background = "rgba(255, 255, 255, 0.1)";
+            }, 2000);
+        }
+    }).catch(err => {
+        console.error("Kunde inte kopiera text: ", err);
+    });
+}
+
+/**
+ * Låter användaren klistra in ett gammalt ID för att synka ner sin sparade data
+ */
+export async function recoverCloudData() {
+    const input = document.getElementById('recover-id-input');
+    const btn = document.getElementById('recover-id-btn');
+    if (!input || !input.value.trim()) return;
+
+    const nyttId = input.value.trim();
+
+    // Enkel validering så man inte klistrar in helt fel text (UUID är 36 tecken långt)
+    if (nyttId.length < 30) {
+        alert("❌ Det där ser inte ut som ett giltigt Backup ID. Kontrollera koden och försök igen.");
+        return;
+    }
+
+    if (confirm("Vill du ersätta appens nuvarande data med säkerhetskopian från molnet?")) {
+        btn.textContent = "Synkar...";
+        btn.style.opacity = "0.7";
+
+        // 1. Sätt det nya ID:t i localstorage så appen vet vem den är i fortsättningen
+        localStorage.setItem('beatrice_user_uuid', nyttId);
+        
+        // 2. Uppdatera det globala fönsterobjektet
+        window.USER_ID = nyttId;
+
+        // 3. Importera laddningsfunktionen dynamiskt och hämta datan
+        try {
+            const { loadDatabaseFromCloud } = await import('./database.js');
+            const lyckades = await loadDatabaseFromCloud();
+
+            if (lyckades) {
+                btn.textContent = "✅ Klart!";
+                btn.style.background = "#2ecc71";
+                
+                alert("🎉 Din träningshistorik har återställts från molnet! Appen laddas nu om.");
+                window.location.reload(); // Laddar om appen så alla vyer ritas med den nya datan
+            } else {
+                alert("❌ Hittade ingen data kopplad till det här ID:t i molnet. Dubbelkolla tecknen.");
+                btn.textContent = "Hämta";
+                btn.style.background = "";
+                btn.style.opacity = "1";
+            }
+        } catch (err) {
+            console.error("Fel vid återställning:", err);
+            alert("Det uppstod ett fel vid anslutningen till molnet.");
+            btn.textContent = "Hämta";
+            btn.style.opacity = "1";
+        }
+    }
+}
+
 window.startWorkout = startWorkout;
 window.startRun = startRun;
 window.saveAndReset = saveAndReset;
@@ -189,3 +285,5 @@ window.updateSettingsSets = updateSettingsSets;
 window.toggleStreakInfoModal = toggleStreakInfoModal;
 window.pauseWorkout = pauseWorkout;
 window.resumeWorkout = resumeWorkout;
+window.USER_ID = USER_ID;
+window.copyUserID = copyUserID;

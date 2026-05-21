@@ -2,7 +2,16 @@
 // REGION: DATABAS & LOCALSTORAGE INITIERING
 // ==========================================
 
+// ==========================================\
+// REGION: DATABAS & SUPABASE INITIERING
+// ==========================================\
+
+// 1. Ange dina unika Supabase-uppgifter här:
+const SUPABASE_URL = "https://zvmtksfuswcwubhllsip.supabase.co";
+const SUPABASE_KEY = "sb_publishable_F99fBGTSulWP1OleIxe9gg_qSBgcVeO";
+
 export const STORAGE_KEY = 'beatrice_workout_data';
+export const USER_ID_KEY = 'beatrice_user_uuid';
 
 const defaultData = {
     history: [],
@@ -15,19 +24,98 @@ const defaultData = {
     sets: 3
 };
 
-// Läs in från LocalStorage
-const savedString = localStorage.getItem(STORAGE_KEY);
-
-// Huvudobjektet som hela appen läser ifrån
-export let data = savedString ? JSON.parse(savedString) : defaultData;
-
-// 🔥 NY FUNKTION: Denna funktion tvingar en säker sparning till webbläsarens minne
-export function saveDatabase() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    console.log("[Beatrice Databas] Data har sparats permanent!", data);
+// Skapa ett unikt Användar-ID (UUID v4) om det inte finns sedan tidigare
+function getOrCreateUserID() {
+    let userId = localStorage.getItem(USER_ID_KEY);
+    if (!userId) {
+        // Enkel generator för ett slumpmässigt UUID på klienten
+        userId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+        localStorage.setItem(USER_ID_KEY, userId);
+        console.log("[Beatrice] Nytt unikt Användar-ID skapat i molnet:", userId);
+    }
+    return userId;
 }
 
-console.log("[Beatrice Databas] Initierad! Pass i minnet:", data.history ? data.history.length : 0);
+export const USER_ID = getOrCreateUserID();
+
+// Starta med lokalt minne först för blixtsnabb laddning
+const savedString = localStorage.getItem(STORAGE_KEY);
+export let data = savedString ? JSON.parse(savedString) : defaultData;
+
+/**
+ * LÄSER IN DATA FRÅN MOLNET
+ * Körs när appen startar för att se till att vi har färsk data
+ */
+export async function loadDatabaseFromCloud() {
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/beatrice_users?user_id=eq.${USER_ID}`, {
+            method: 'GET',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) throw new Error("Kunde inte hämta data från Supabase");
+        
+        const result = await response.json();
+        
+        if (result && result.length > 0) {
+            // Molnet hade sparad data! Uppdatera appen och lokala minnet
+            data = result[0].workout_data;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            console.log("[Beatrice Databas] Molndata hämtad och synkad!", data);
+            return true;
+        } else {
+            console.log("[Beatrice Databas] Ingen tidigare molndata hittades för denna användare. Sparar standarddata.");
+            await saveDatabase(); // Skapa första raden i molnet direkt
+            return false;
+        }
+    } catch (error) {
+        console.error("[Beatrice Databas] Fel vid molnladdning (kör på lokalt minne):", error);
+        return false;
+    }
+}
+
+/**
+ * SPARAR DATA TILL BÅDE LOCALSTORAGE OCH MOLNET
+ */
+export async function saveDatabase() {
+    // 1. Spara lokalt direkt för direkt respons i UI
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    console.log("[Beatrice Databas] Data sparad lokalt.", data);
+
+    // 2. Skicka asynkront upp till Supabase-molnet (Upsert = Skapa eller Uppdatera)
+    try {
+        const payload = {
+            user_id: USER_ID,
+            workout_data: data,
+            updated_at: new Date().toISOString()
+        };
+
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/beatrice_users`, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'resolution=merge-duplicates' // Gör att det blir en "upsert" (skriv över om ID matchar)
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error("Supabase nekade sparningen");
+        console.log("[Beatrice Databas] 🔥 Molnsynkning lyckades skottsäkert!");
+    } catch (error) {
+        console.error("[Beatrice Databas] ❌ Kunde inte synka till molnet just nu (sparas lokalt så länge):", error);
+    }
+}
+
+console.log("[Beatrice Databas] Initierad med Användar-ID:", USER_ID);
 
 
 // ==========================================

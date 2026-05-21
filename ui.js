@@ -4,6 +4,7 @@ import { achievementRules } from './achievements.js';
 import { achievementQueue } from './history.js';
 import { renderStatistics, generateStatsSummary, updateStreak as calculateStreakValue } from './stats.js';
 
+
 export function initUI() {
     updateStreak();
     renderAchievements();
@@ -252,6 +253,7 @@ if (!document.getElementById('beatrice-hidden-style')) {
 
 export function switchTab(tabId) {
     console.log(`[Beatrice Navigering] switchTab anropad med id: ${tabId}`);
+
     if (tabId === 'stats-selection' || tabId === 'statistics') {
         renderStatistics();
     }
@@ -284,7 +286,6 @@ export function switchTab(tabId) {
     // Kodbiten inuti switchTab(tabId) i ui.js som tänder rätt knapp:
     const buttons = document.querySelectorAll('.nav-btn, .tab-btn');
     buttons.forEach(btn => {
-        // Kontrollerar om knappens onclick-kod innehåller det tabId vi just bytte till
         if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(tabId)) {
             btn.classList.add('active');
         } else {
@@ -330,23 +331,27 @@ export function switchTab(tabId) {
         }
     }
 
-  
-// 🔥 AUTOMATISK VISNING/DÖLJNING AV TRÄNINGS- OCH LÖPKORT
+    // 🔥 AUTOMATISK VISNING/DÖLJNING AV TRÄNINGS- OCH LÖPKORT
     const workoutGrid = document.querySelector('.workout-cards-grid');
     const runGrid = document.querySelector('.run-cards-grid');
-    const startBtn = document.getElementById('start-btn');
+    const startBtn = document.getElementById('start-btn-container');
 
     if (tabId === 'workout-section') {
-        // Om användaren klickar på Träningsfliken, visa korten!
         if (workoutGrid) workoutGrid.style.display = 'flex';
         if (runGrid) runGrid.style.display = 'flex';
-        // Startknappen ska förbli dold tills de faktiskt väljer ett specifikt pass
     } else {
-        // Om användaren är på någon annan flik (Historik, Mål, Stats, Hem), dölj allt!
         if (workoutGrid) workoutGrid.style.display = 'none';
         if (runGrid) runGrid.style.display = 'none';
         if (startBtn) startBtn.style.display = 'none';
     }
+
+    // 🚀 SÄKER Centrerad/Topp-scroll med timeout (löser envisa mobiler)
+    setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        // Dubbel säkerhet för vissa iOS/Safari-versioner
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+    }, 10);
 }
 
 export function showPauseButton() {

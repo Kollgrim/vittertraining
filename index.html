@@ -7,49 +7,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Träningscoach - Beatrice</title>
 
-
-<div class="header-top" style="display: flex !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; gap: 15px !important; padding-bottom: 15px;">
-    
-    <div class="user-welcome" style="flex: 1 !important; text-align: left !important;">
-        <h1 style="margin: 0; font-size: 1.4rem;">Välkommen till din träningscoach - Beatrice! <span class="wave">👋</span></h1>
-        <div id="last-workout-status" class="header-status-text" style="margin-top: 5px;">
-            Laddar status...
-        </div>
-    </div>
-    
-    <div style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 10px !important; flex-shrink: 0 !important; min-width: max-content !important;">
-        
-        <div id="health-container" 
-             onclick="import('./ui.js').then(mod => mod.showHealthInfo())" 
-             onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 0 12px rgba(255, 0, 212, 0.4)'; this.style.borderColor='rgba(255, 0, 212, 0.4)';" 
-             onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'; this.style.borderColor='#2e3d56';"
-             style="background: #1e293b; padding: 6px 14px; border-radius: 20px; border: 1px solid #2e3d56; display: flex; align-items: center; gap: 8px; min-width: 130px; height: 34px; box-sizing: border-box; cursor: pointer; transition: transform 0.2s ease, box-shadow; "0 0 12px rgba(255, 0, 212, 0), border-color 0.2s ease;">
-            
-            <span id="health-heart" style="font-size: 0.95rem; line-height: 1;">🔥</span>
-            
-            <div style="width: 60px; height: 10px; background: #0f172a; border-radius: 5px; overflow: hidden; position: relative; display: inline-block;">
-                <div id="health-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ff00d4, #9d00ff); transition: width 0.5s ease-in-out;"></div>
-            </div>
-            
-            <span id="health-text" style="color: #8fa0dd; font-size: 0.8rem; font-weight: bold; min-width: 32px; text-align: right;">100%</span>
-        </div>
-
-        <div id="streak-chip-button" class="streak-chip" onclick="toggleStreakInfoModal()" 
-             style="cursor: pointer; display: flex !important; flex-direction: row !important; align-items: center !important; gap: 5px; white-space: nowrap !important; transition: transform 0.2s ease, box-shadow; "0 0 12px rgba(255, 165, 0, 0);">
-            <span id="streak-emoji" class="streak-fire">❔</span>
-            <span class="streak-count" style="white-space: nowrap !important;"><span id="streak-number">0</span> veckor</span>
-        </div>
-        
-        <button onclick="toggleSettingsModal()" 
-                style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; font-size: 20px; padding: 0; border-radius: 50%; cursor: pointer; display: flex !important; align-items: center !important; justify-content: center !important; width: 40px; height: 40px; flex-shrink: 0 !important; transition: transform 0.2s ease, box-shadow: 0 0 12px rgba(255, 165, 0, 0), border-color 0.2s ease, background 0.2s ease;" 
-                onmouseover="this.style.transform='scale(1.05)'; this.style.background='rgba(255, 165, 0, 0.1)'; this.style.borderColor='rgba(255, 165, 0, 0.5)'; this.style.boxShadow='0 0 12px rgba(255, 165, 0, 0.5)';" 
-                onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.transform='scale(1)'; this.style.boxShadow='0 0 12px rgba(255, 165, 0, 0)';">
-            ⚙️
-        </button>
+<div id="splash-screen">
+    <div class="splash-content">
+        <div class="splash-logo">🏃‍♀️</div>
+             <h1>BEATRICE</h1>
+             <p>Din personliga träningscoach</p>
+        <div class="splash-loader"></div>
     </div>
 </div>
 
+<div class="header-top" style="display: flex !important; flex-direction: column !important; width: 100% !important; gap: 12px !important; padding: 10px 0 15px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+    
+    <div id="health-container" 
+         onclick="import('./ui.js').then(mod => mod.showHealthInfo())" 
+         style="width: 100% !important; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 10px 14px; border-radius: 14px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; box-sizing: border-box;">
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-weight: 600; color: #8fa0dd;">
+            <div style="display: flex; align-items: center; gap: 4px;">❤️ Livskraft</div>
+            <div id="health-text" style="color: #fff; font-variant-numeric: tabular-nums;">100%</div>
+        </div>
+        <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden;">
+            <div id="health-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ff4757, #ff6b81); border-radius: 99px; transition: width 0.5s ease;"></div>
+        </div>
+    </div>
+
+    <div style="display: flex !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; gap: 10px !important;">
+        
+        <div id="streak-chip-button" onclick="toggleStreakInfoModal()"
+             style="flex: 1; background: rgba(255, 165, 0, 0.06); border: 1px solid rgba(255, 165, 0, 0.2); border-radius: 12px; padding: 8px 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; font-size: 0.9rem; color: #ffa500; cursor: default; transition: all 0.2s; min-height: 40px; box-sizing: border-box;">
+            <span id="streak-emoji" style="filter: grayscale(100%); opacity: 0.4; font-size: 1.1rem;">🔥</span>
+            <span id="streak-number" style="font-variant-numeric: tabular-nums;">0</span>
+            <span style="font-size: 0.8rem; font-weight: 500; color: rgba(255,165,0,0.8);">veckor i rad</span>
+        </div>
+
+        <button id="settings-btn" 
+                onclick="if(typeof toggleSettingsModal === 'function'){ toggleSettingsModal(); } else { import('./ui.js').then(mod => mod.toggleSettingsModal()); }" 
+                style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; padding: 8px 16px; border-radius: 12px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; min-height: 40px; transition: all 0.2s;"
+                onmouseover="this.style.background='rgba(255,255,255,0.1)'" 
+                onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+            ⚙️ <span style="display: inline;">Inställningar</span>
+        </button>
+
+    </div>
+</div>
     <title>Träningscoach - Beatrice</title>
+
     <style>
 
 
@@ -700,113 +701,110 @@ button, .tab-btn, .nav-btn, .streak-chip {
 
     
     </style>
+
 </head>
-    <body>
+
+<body>
         <div class="app-container"></div>
     <!--  MENYER  -->
-
+      
         <div id="view-workout">
             <div id="timer-display" style="display: none;">
                     <div id="timer-task">"Gör dig redo!"</div>
                     <div id="timer-time">10</div>
                     <div id="timer-set">"Passet startar strax..."</div>
-            </div>
-        </div>        
-        
-        <div id="countdownDisplay" style="display: none; font-size: 2em; color: var(--neon-pink); font-weight: bold; text-align: center; margin: 10px 0;">
-            Återupptar om: 10s
-        </div>  
 
-        <div id="splash-screen">
-            <div class="splash-content">
-            <div class="splash-logo">🏃‍♀️</div>
-             <h1>BEATRICE</h1>
-             <p>Din personliga träningscoach</p>
-            <div class="splash-loader"></div>
+                    
             </div>
         </div>
+
+        <div id="countdownDisplay" style="display: none; font-size: 2em; color: var(--neon-pink); font-weight: bold; text-align: center; margin: 10px 0;">
+            Återupptar om: 10s
+        </div> 
+
+<div id="start-btn-container" style="display: none; width: 100%; text-align: center; margin: 0px 0;">
+    <button id="start-btn" onclick="startWorkout()" 
+        onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 0 25px rgba(255, 0, 214, 0.6)'; this.style.borderColor='#ff00d4';" 
+        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 0 15px rgba(255, 0, 214, 0.2)'; this.style.borderColor='rgba(255, 0, 214, 0.4)';"
+        style="
+            background: linear-gradient(135deg, #ff00d4 0%, #9d00ff 100%);
+            color: #ffffff;
+            border: 1px solid rgba(255, 0, 214, 0.4);
+            border-radius: 30px;
+            padding: 14px 36px;
+            font-size: 1rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: inline-flex; /* Ändrat till inline-flex */
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 0 15px rgba(255, 0, 214, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            margin: 0 auto; /* Tvingar knappen till mitten av raden */
+        ">
+        <span style="font-size: 0.9rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">▶</span>
+        <span style="text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">Starta passet</span>
+    </button>
+</div>
+
+<div id="workout-controls" style="display: none; width: 100%; text-align: center; margin: 15px 0;">
+    <div style="display: inline-flex; gap: 10px; margin: 0 auto;">
+        <button id="pause-btn" onclick="pauseWorkout()" 
+            style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; font-size: 1.1rem; padding: 12px 25px; border-radius: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s ease;"
+            onmouseover="this.style.background='rgba(255, 165, 0, 0.1)'; this.style.borderColor='rgba(255, 165, 0, 0.5)'; this.style.boxShadow='0 0 12px rgba(255, 165, 0, 0.3)';"
+            onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.boxShadow='none';">
+            ⏸️ Pausa passet
+        </button>
+
+        <button id="resume-btn" onclick="resumeWorkout()" 
+            style="display: none; background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; color: #fff; font-size: 1.1rem; padding: 12px 25px; border-radius: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); transition: transform 0.2s ease;"
+            onmouseover="this.style.transform='scale(1.05)';"
+            onmouseout="this.style.transform='scale(1)';">
+            ▶️ Återuppta
+        </button>
+    </div>
+</div>
+
+
 
 <!-- FLIK - TRÄNING -->
 
        <div id="workout-section" class="tab-content" style="display: none; flex-direction: column;">
-            <div style="display: flex; justify-content: center; width: 100%; margin: 0px 0 15px 0;">
-            <button id="start-btn" onclick="startWorkout()" 
-                onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 0 25px rgba(255, 0, 214, 0.6)'; this.style.borderColor='#ff00d4';" 
-                onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 0 15px rgba(255, 0, 214, 0.2)'; this.style.borderColor='rgba(255, 0, 214, 0.4)';"
-                style="
-                display: none; 
-                background: linear-gradient(135deg, #ff00d4 0%, #9d00ff 100%);
-                color: #ffffff;
-                border: 1px solid rgba(255, 0, 214, 0.4);
-                border-radius: 30px;
-                padding: 14px 36px;
-                font-size: 1rem;
-                font-weight: 800;
-                letter-spacing: 0.5px;
-                text-transform: uppercase;
-                cursor: pointer;
-                align-items: center;
-                gap: 10px;
-                box-shadow: 0 0 15px rgba(255, 0, 214, 0.2);
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                outline: none;
-            ">
-                <span style="font-size: 0.9rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">▶</span>
-                <span style="text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">Starta passet</span>
-            </button>
-        </div>
+             <h2 id="workout-title" style="margin-top: 0; margin-bottom: 0px; justify-content: center; width: 100%;text-align: center;margin: 10px 0;">Välj ett träningspass</h2>
+    
+            <div class="workout-cards-grid" style="display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; margin-bottom: 20px; width: 100%; box-sizing: border-box; flex-wrap: unset !important; flex-direction: unset !important;">
+    
+                <div class="workout-card card" onclick="document.getElementById('workout-title').style.display='none'; import('./training.js').then(mod => mod.selectPass(1))" style="cursor: pointer; padding: 14px 12px; box-sizing: border-box; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0 !important; max-width: 100% !important; flex: 1;">
+                    <div>
+                    <h3 style="margin: 0 0 4px 0; color: #ff00d4; font-size: 0.95rem;">💪 PASS 1</h3>
+                    <h4 style="margin: 0 0 6px 0; font-size: 0.85rem; color: #fff;">Armar & Överkropp</h4>
+                    </div>
+                </div>
+    
+                    <div class="workout-card card" onclick="document.getElementById('workout-title').style.display='none'; import('./training.js').then(mod => mod.selectPass(2))" style="cursor: pointer; padding: 14px 12px; box-sizing: border-box; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0 !important; max-width: 100% !important; flex: 1;">
+                        <div>
+                        <h3 style="margin: 0 0 4px 0; color: #ff00d4; font-size: 0.95rem;">🦵 PASS 2</h3>
+                        <h4 style="margin: 0 0 6px 0; font-size: 0.85rem; color: #fff;">Ben & Rumpa</h4>
+                        </div>
 
-    <div 
-id="workout-controls" style="display: none; justify-content: center; gap: 0px; margin-top: 20px;">
-    <button id="pause-btn" onclick="pauseWorkout()" 
-            style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; font-size: 1.1rem; padding: 12px 25px; border-radius: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s ease;"
-            onmouseover="this.style.background='rgba(255, 165, 0, 0.1)'; this.style.borderColor='rgba(255, 165, 0, 0.5)'; this.style.boxShadow='0 0 12px rgba(255, 165, 0, 0.3)';"
-            onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.boxShadow='none';">
-        ⏸️ Pausa passet
-    </button>
-
-    <button id="resume-btn" onclick="resumeWorkout()" 
-            style="display: none; background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; color: #fff; font-size: 1.1rem; padding: 12px 25px; border-radius: 30px; cursor: pointer; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); transition: transform 0.2s ease;"
-            onmouseover="this.style.transform='scale(1.05)';"
-            onmouseout="this.style.transform='scale(1)';">
-        ▶️ Återuppta
-    </button>
-</div>
-
-    <h2 id="workout-title" style="margin-top: 0; margin-bottom: 25px; justify-content: center; width: 100%;text-align: center;">Välj ett träningspass</h2>
+                    </div>
     
-<div class="workout-cards-grid" style="display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; margin-bottom: 20px; width: 100%; box-sizing: border-box; flex-wrap: unset !important; flex-direction: unset !important;">
-    
-    <div class="workout-card card" onclick="document.getElementById('workout-title').style.display='none'; import('./training.js').then(mod => mod.selectPass(1))" style="cursor: pointer; padding: 14px 12px; box-sizing: border-box; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0 !important; max-width: 100% !important; flex: 1;">
-        <div>
-            <h3 style="margin: 0 0 4px 0; color: #ff00d4; font-size: 0.95rem;">💪 PASS 1</h3>
-            <h4 style="margin: 0 0 6px 0; font-size: 0.85rem; color: #fff;">Armar & Överkropp</h4>
-        </div>
-        <p style="margin: 0; font-size: 0.75rem; color: #8fa0dd; line-height: 1.3;">Biceps, triceps, axlar och bröst. 5 övningar.</p>
-    </div>
-    
-    <div class="workout-card card" onclick="document.getElementById('workout-title').style.display='none'; import('./training.js').then(mod => mod.selectPass(2))" style="cursor: pointer; padding: 14px 12px; box-sizing: border-box; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0 !important; max-width: 100% !important; flex: 1;">
-        <div>
-            <h3 style="margin: 0 0 4px 0; color: #ff00d4; font-size: 0.95rem;">🦵 PASS 2</h3>
-            <h4 style="margin: 0 0 6px 0; font-size: 0.85rem; color: #fff;">Ben & Rumpa</h4>
-        </div>
-        <p style="margin: 0; font-size: 0.75rem; color: #8fa0dd; line-height: 1.3;">Stärk underkropp/bål. Knäböj och core-fokus.</p>
-    </div>
-    
-    <div class="workout-card card" onclick="document.getElementById('workout-title').style.display='none'; import('./training.js').then(mod => mod.selectPass(3))" style="cursor: pointer; padding: 14px 12px; box-sizing: border-box; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0 !important; max-width: 100% !important; flex: 1">
-        <div>
-            <h3 style="margin: 0 0 4px 0; color: #ff00d4; font-size: 0.95rem;">🔥 PASS 3</h3>
-            <h4 style="margin: 0 0 6px 0; font-size: 0.85rem; color: #fff;">Mage & Core</h4>
-        </div>
-        <p style="margin: 0; font-size: 0.75rem; color: #8fa0dd; line-height: 1.3;">Utmanar både ren styrka och flås för hela kroppen.</p>
-    </div>
+                <div class="workout-card card" onclick="document.getElementById('workout-title').style.display='none'; import('./training.js').then(mod => mod.selectPass(3))" style="cursor: pointer; padding: 14px 12px; box-sizing: border-box; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0 !important; max-width: 100% !important; flex: 1">
+                    <div>
+                    <h3 style="margin: 0 0 4px 0; color: #ff00d4; font-size: 0.95rem;">🔥 PASS 3</h3>
+                    <h4 style="margin: 0 0 6px 0; font-size: 0.85rem; color: #fff;">Mage & Core</h4>
+                    </div>
+                </div>
 
     <div class="workout-card card" onclick="document.getElementById('workout-title').style.display='none'; import('./training.js').then(mod => mod.selectPass(4))" style="cursor: pointer; padding: 14px 12px; box-sizing: border-box; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; flex: 1; flex-direction: column; justify-content: space-between; min-width: 0 !important; max-width: 100% !important;">
         <div>
             <h3 style="margin: 0 0 4px 0; color: #ff00d4; font-size: 0.95rem;">🎲 PASS 4</h3>
             <h4 style="margin: 0 0 6px 0; font-size: 0.85rem; color: #fff;">Slumpad Mix</h4>
         </div>
-        <p style="margin: 0; font-size: 0.75rem; color: #8fa0dd; line-height: 1.3;">Unikt pass varje gång med 3 slumpade moment.</p>
+
     </div>
     
 </div>
@@ -843,7 +841,7 @@ id="workout-controls" style="display: none; justify-content: center; gap: 0px; m
     
 <!-- FLIK - HISTORIK -->
 
-<div id="history-section" class="tab-content" style="display: none; flex-direction: column; justify-content: flex-start; gap: 0px;">
+<div id="history-section" class="tab-content" style="display: none; flex-direction: column; justify-content: flex-start; gap: 10px;">
             <div class="card" ;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h2 style="margin: 0;">KALENDER 2026</h2>
@@ -856,7 +854,7 @@ id="workout-controls" style="display: none; justify-content: center; gap: 0px; m
             <div id="calendar-container"></div>
 
 <div class="calendar-legend" style="background: var(--card-bg); padding: 15px; border-radius: 24px; border: 1px solid var(--border); margin-top: 15px;">
-    
+    <!--
     <div class="legend-section" style="margin-bottom: 15px;">
         <h4 style="color: var(--white); margin: 0 0 10px 0; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px;">Träningstyper</h4>
         <div class="legend-items" style="display: flex; flex-wrap: wrap; gap: 15px;"> 
@@ -880,7 +878,7 @@ id="workout-controls" style="display: none; justify-content: center; gap: 0px; m
     </div>
             </div>
     </div>
-
+    -->
     <div class="legend-section">
         <h4 style="color: var(--white); margin: 0 0 10px 0; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px;">Passkänsla</h4>
         <div class="legend-items" style="display: flex; flex-wrap: wrap; gap: 15px;">
@@ -920,6 +918,8 @@ id="workout-controls" style="display: none; justify-content: center; gap: 0px; m
 <!--  FLIK - PRESTATIONER  -->
 
 <div id="achievements-section" class="tab-content" style="display: none;">
+        <h3 style="color: #00e5ff; font-size: 1rem; text-transform: uppercase; margin-top: 0; margin-bottom: 0px;"> Prestationer</h3>
+        <p style="margin: 0; font-size: 0.85rem; color: #8fa0dd;">Här ser du upplåsta prestationer. Vilket blir ditt nästa mål?</p>
          <div id="achievements-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; padding: 10px;">
         </div>
 </div>
@@ -991,24 +991,47 @@ id="workout-controls" style="display: none; justify-content: center; gap: 0px; m
     </div>
 </div>
 
-
-
     
     </div>
 
+
+
+
     <div id="run-finish-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 9999; flex-direction: column; align-items: center; justify-content: center;">
+        
         <div id="run-info-display" style="color: white; margin-bottom: 20px; font-size: 1.2em; letter-spacing: 2px;">🏃 LOGGAR LÖPNING...</div>
-        <button id="finish-run-btn" style="background: var(--neon-pink); color: white; border: none; padding: 25px 40px; border-radius: 20px; font-size: 1.5em; font-weight: bold; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 30px var(--neon-pink);">KLAR - STOPPA TID</button>
+        <div style="width: 100%; max-width: 340px; text-align: center; background: rgba(255, 255, 255, 0.03); padding: 20px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+        
+            <div style="margin-bottom: 18px; padding-bottom: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <span style="display: block; font-size: 0.8rem; color: #8fa0dd; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">Tid i rörelse</span>
+                <span id="running-time-display" style="font-size: 2.6rem; font-weight: 900; color: #fff; font-family: monospace; letter-spacing: 1px;">00:00</span>
+            </div>
+
+            <div>
+                <span style="display: block; font-size: 0.8rem; color: #8fa0dd; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">Avverkad distans</span>
+                <span id="running-distance-display" style="font-size: 3rem; font-weight: 900; color: #fff; font-family: monospace; letter-spacing: 1px;">0.00 km</span>
+            </div>
+        </div>
+
+            <button id="finish-run-btn" style="background: var(--neon-pink); color: white; border: none; padding: 25px 40px; border-radius: 20px; font-size: 1.5em; font-weight: bold; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 30px var(--neon-pink);">KLAR - STOPPA TID</button>
+    
     </div> 
 
+
+
+
+
+
+
+
     <div id="ratingModal" class="modal">
-        <div class="modal-content" style="background:#151921; border:1px solid var(--neon-blue); text-align:center;">
-            <h3 style="color:white;">Bra jobbat!</h3>
-            <p style="color:#ccc;">Hur kändes passet?</p>
-            <button class="rating-btn easy" onclick="saveAndReset('Lätt')">Lätt 😊</button>
-            <button class="rating-btn good" onclick="saveAndReset('Bra')">Bra 👍</button>
-            <button class="rating-btn hard" onclick="saveAndReset('Svårt')">Svårt 🔥</button>
-        </div>
+            <div class="modal-content" style="background:#151921; border:1px solid var(--neon-blue); text-align:center;">
+                <h3 style="color:white;">Bra jobbat!</h3>
+                <p style="color:#ccc;">Hur kändes passet?</p>
+                <button class="rating-btn easy" onclick="saveAndReset('Lätt')">Lätt 😊</button>
+                <button class="rating-btn good" onclick="saveAndReset('Bra')">Bra 👍</button>
+                <button class="rating-btn hard" onclick="saveAndReset('Svårt')">Svårt 🔥</button>
+            </div>
     </div>
 
     <div id="exerciseModal" class="modal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center;">
@@ -1176,6 +1199,40 @@ id="workout-controls" style="display: none; justify-content: center; gap: 0px; m
             </div>
  -->           
         
+<div style="margin-top: 15px; padding: 12px; background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.1); border-radius: 8px;">
+    <label style="display: block; color: #8fa0dd; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 5px;">
+        🔄 Återställ data på ny enhet
+    </label>
+    <div style="display: flex; gap: 8px;">
+        <input type="text" id="recover-id-input" placeholder="Klistra in ditt Backup ID här..." 
+            style="flex: 1; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 6px 10px; color: #fff; font-family: monospace; font-size: 0.8rem; outline: none;">
+        <button onclick="recoverCloudData()" id="recover-id-btn" 
+            style="background: linear-gradient(135deg, #9d00ff, #ff00d4); border: none; color: #fff; padding: 6px 14px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; font-weight: 600; white-space: nowrap;">
+            Hämta
+        </button>
+    </div>
+</div>
+
+
+        <div style="margin-top: 25px; padding: 15px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; text-align: left;">
+    <label style="display: block; color: #8fa0dd; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">
+        ☁️ Din unika molnnyckel (Backup ID)
+    </label>
+    <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem; margin: 0 0 10px 0; line-height: 1.4;">
+        Spara denna kod. Om du byter telefon eller rensar webbläsaren kan den användas för att återställa din träningshistorik.
+    </p>
+    
+    <div style="display: flex; gap: 8px; align-items: center; background: rgba(0, 0, 0, 0.2); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05);">
+        <span id="settings-user-id" style="font-family: monospace; font-size: 0.85rem; color: #fff; word-break: break-all; flex: 1;">
+            Laddar ID...
+        </span>
+        <button onclick="copyUserID()" id="copy-id-btn" style="background: rgba(255, 255, 255, 0.1); border: none; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s; white-space: nowrap;">
+            📋 Kopiera
+        </button>
+    </div>
+</div>
+
+
         <button onclick="import('./history.js').then(mod => {  
             const dummy = { name: 'Fuskpass (Styrka)', type: 'Styrka', date: new Date().toISOString().split('T')[0], exercises: [{ name: 'Fusk', sets: [1] }] };  
             import('./database.js').then(db => { db.data.history.push(dummy); db.saveDatabase(); mod.saveAndReset('Lagom'); });  
